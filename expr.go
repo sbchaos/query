@@ -442,7 +442,7 @@ func (r *QualifiedRef) String() string {
 	if r.Star.IsValid() {
 		return fmt.Sprintf("%s.*", r.Table.String())
 	}
-	return fmt.Sprintf("%s.%s", r.Table.String(), r.Column.String())
+	return r.Table.String() + "." + r.Column.String()
 }
 
 type UnaryExpr struct {

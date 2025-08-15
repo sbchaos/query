@@ -210,6 +210,7 @@ func AssertScan(tb testing.TB, s string, expectedTok query.Token, expectedLit st
 
 func Benchmark_NewScanner(b *testing.B) {
 	s := `SELECT * FROM foo WHERE bar = 1`
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		scanner := query.NewScanner(strings.NewReader(s))
 		for {

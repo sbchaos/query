@@ -399,23 +399,17 @@ func IsInteger(s string) bool {
 	return s != ""
 }
 
-func quoteType(ch rune) Token {
-	tok := QIDENT
-	if ch == '\'' {
-		tok = STRING
-	} else if ch == '`' {
-		tok = TSTRING
-	}
-	return tok
-}
-
 func quoteRune(tok Token) rune {
-	if tok == STRING {
+	switch {
+	case tok == STRING:
 		return '\''
-	} else if tok == TSTRING {
+	case tok == QIDENT:
+		return '"'
+	case tok == TSTRING:
 		return '`'
+	default:
+		return 0
 	}
-	return '"'
 }
 
 func endQuote(ch rune) rune {
@@ -424,7 +418,9 @@ func endQuote(ch rune) rune {
 		return '\''
 	case '`':
 		return '`'
-	default:
+	case '"':
 		return '"'
+	default:
+		return 0
 	}
 }

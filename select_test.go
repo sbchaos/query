@@ -588,6 +588,24 @@ func TestParser_ParseStatement(t *testing.T) {
 			OffsetComma: pos(16),
 			OffsetExpr:  &query.NumberLit{ValuePos: pos(18), Value: "2"},
 		})
+		AssertParseStatement(t, `SELECT shop_uuid, price_range FROM merchant_price WHERE sale_date = '{{ .DSTART | Date }}'`, &query.SelectStatement{
+			Select: pos(0),
+			Columns: []*query.ResultColumn{
+				{Expr: &query.Ident{NamePos: pos(7), Name: "shop_uuid"}},
+				{Expr: &query.Ident{NamePos: pos(18), Name: "price_range"}},
+			},
+			From: pos(30),
+			Source: &query.QualifiedTableName{
+				Name: &query.Ident{NamePos: pos(35), Name: "merchant_price"},
+			},
+			Where: pos(50),
+			WhereExpr: &query.BinaryExpr{
+				X:     &query.Ident{NamePos: pos(56), Name: "sale_date"},
+				OpPos: pos(66),
+				Op:    query.EQ,
+				Y:     &query.StringLit{ValuePos: pos(68), Value: "{{ .DSTART | Date }}"},
+			},
+		})
 		AssertParseStatement(t, `SELECT * UNION SELECT * ORDER BY foo`, &query.SelectStatement{
 			Select: pos(0),
 			Columns: []*query.ResultColumn{

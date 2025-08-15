@@ -9,8 +9,8 @@ import (
 )
 
 func TestIdent_String(t *testing.T) {
-	AssertExprStringer(t, &query.Ident{Name: "foo"}, `"foo"`)
-	AssertExprStringer(t, &query.Ident{Name: "foo \" bar"}, `"foo "" bar"`)
+	AssertExprStringer(t, &query.Ident{Name: "foo", Quote: '"'}, `"foo"`)
+	AssertExprStringer(t, &query.Ident{Name: "foo \" bar", Quote: '"'}, `"foo "" bar"`)
 }
 
 func TestParenExpr_String(t *testing.T) {
@@ -70,8 +70,8 @@ func TestExprList_String(t *testing.T) {
 }
 
 func TestQualifiedRef_String(t *testing.T) {
-	AssertExprStringer(t, &query.QualifiedRef{Table: &query.Ident{Name: "tbl"}, Column: &query.Ident{Name: "col"}}, `"tbl"."col"`)
-	AssertExprStringer(t, &query.QualifiedRef{Table: &query.Ident{Name: "tbl"}, Star: pos(0)}, `"tbl".*`)
+	AssertExprStringer(t, &query.QualifiedRef{Table: &query.Ident{Name: "tbl", Quote: '"'}, Column: &query.Ident{Name: "col", Quote: '"'}}, `"tbl"."col"`)
+	AssertExprStringer(t, &query.QualifiedRef{Table: &query.Ident{Name: "tbl", Quote: '"'}, Star: pos(0)}, `"tbl".*`)
 }
 
 func TestCall_String(t *testing.T) {
