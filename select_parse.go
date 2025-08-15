@@ -1,0 +1,797 @@
+package query
+
+import "io"
+
+func (p *Parser) ParseStatement() (stmt Statement, err error) {
+	switch tok := p.peek(); tok {
+	case EOF:
+		return nil, io.EOF
+	default:
+		if stmt, err = p.parseNonExplainStatement(); err != nil {
+			return stmt, err
+		}
+	}
+
+	// Read trailing semicolon or end of file.
+	if tok := p.peek(); tok != EOF && tok != SEMI {
+		return stmt, p.errorExpected(p.pos, p.tok, "semicolon or EOF")
+	}
+	p.scan()
+
+	return stmt, nil
+}
+
+// parseStmt parses all statement types.
+func (p *Parser) parseNonExplainStatement() (Statement, error) {
+	switch p.peek() {
+	case SELECT, VALUES:
+		return p.parseSelectStatement(false, nil)
+	case WITH:
+		return p.parseWithStatement(false)
+	default:
+		return nil, p.errorExpected(p.pos, p.tok, "statement")
+	}
+}
+
+// parseSelectStatement parses a SELECT statement.
+// If compounded is true, WITH, ORDER BY, & LIMIT/OFFSET are skipped.
+func (p *Parser) parseSelectStatement(compounded bool, withClause *WithClause) (_ *SelectStatement, err error) {
+	var stmt SelectStatement
+	stmt.WithClause = withClause
+
+	// Parse optional "WITH [RECURSIVE} cte, cte..."
+	// This is only called here if this method is called directly. Generic
+	// statement parsing will parse the WITH clause and pass it in instead.
+	if !compounded && stmt.WithClause == nil && p.peek() == WITH {
+		if stmt.WithClause, err = p.parseWithClause(); err != nil {
+			return &stmt, err
+		}
+	}
+
+	switch p.peek() {
+	case VALUES:
+		stmt.Values, _, _ = p.scan()
+
+		for {
+			var list ExprList
+			if p.peek() != LP {
+				return &stmt, p.errorExpected(p.pos, p.tok, "left paren")
+			}
+			list.Lparen, _, _ = p.scan()
+
+			for {
+				expr, err := p.ParseExpr()
+				if err != nil {
+					return &stmt, err
+				}
+				list.Exprs = append(list.Exprs, expr)
+
+				if p.peek() == RP {
+					break
+				} else if p.peek() != COMMA {
+					return &stmt, p.errorExpected(p.pos, p.tok, "comma or right paren")
+				}
+				p.scan()
+			}
+			list.Rparen, _, _ = p.scan()
+			stmt.ValueLists = append(stmt.ValueLists, &list)
+
+			if p.peek() != COMMA {
+				break
+			}
+			p.scan()
+
+		}
+
+	case SELECT:
+		stmt.Select, _, _ = p.scan()
+
+		// Parse optional "DISTINCT" or "ALL".
+		if tok := p.peek(); tok == DISTINCT {
+			stmt.Distinct, _, _ = p.scan()
+		} else if tok == ALL {
+			stmt.All, _, _ = p.scan()
+		}
+
+		// Parse result columns.
+		for {
+			col, err := p.parseResultColumn()
+			if err != nil {
+				return &stmt, err
+			}
+			stmt.Columns = append(stmt.Columns, col)
+
+			if p.peek() != COMMA {
+				break
+			}
+			p.scan()
+		}
+
+		// Parse FROM clause.
+		if p.peek() == FROM {
+			stmt.From, _, _ = p.scan()
+			if stmt.Source, err = p.parseSource(); err != nil {
+				return &stmt, err
+			}
+		}
+
+		// Parse WHERE clause.
+		if p.peek() == WHERE {
+			stmt.Where, _, _ = p.scan()
+			if stmt.WhereExpr, err = p.ParseExpr(); err != nil {
+				return &stmt, err
+			}
+		}
+
+		// Parse GROUP BY/HAVING clause.
+		if p.peek() == GROUP {
+			stmt.Group, _, _ = p.scan()
+			if p.peek() != BY {
+				return &stmt, p.errorExpected(p.pos, p.tok, "BY")
+			}
+			stmt.GroupBy, _, _ = p.scan()
+
+			for {
+				expr, err := p.ParseExpr()
+				if err != nil {
+					return &stmt, err
+				}
+				stmt.GroupByExprs = append(stmt.GroupByExprs, expr)
+
+				if p.peek() != COMMA {
+					break
+				}
+				p.scan()
+			}
+
+			// Parse optional HAVING clause.
+			if p.peek() == HAVING {
+				stmt.Having, _, _ = p.scan()
+				if stmt.HavingExpr, err = p.ParseExpr(); err != nil {
+					return &stmt, err
+				}
+			}
+		}
+
+		// Parse WINDOW clause.
+		if p.peek() == WINDOW {
+			stmt.Window, _, _ = p.scan()
+
+			for {
+				var window Window
+				if window.Name, err = p.parseIdent("window name"); err != nil {
+					return &stmt, err
+				}
+
+				if p.peek() != AS {
+					return &stmt, p.errorExpected(p.pos, p.tok, "AS")
+				}
+				window.As, _, _ = p.scan()
+
+				if window.Definition, err = p.parseWindowDefinition(); err != nil {
+					return &stmt, err
+				}
+
+				stmt.Windows = append(stmt.Windows, &window)
+
+				if p.peek() != COMMA {
+					break
+				}
+				p.scan()
+			}
+		}
+	default:
+		return &stmt, p.errorExpected(p.pos, p.tok, "SELECT or VALUES")
+	}
+
+	// Optionally compound additional SELECT/VALUES.
+	switch tok := p.peek(); tok {
+	case UNION, INTERSECT, EXCEPT:
+		if tok == UNION {
+			stmt.Union, _, _ = p.scan()
+			if p.peek() == ALL {
+				stmt.UnionAll, _, _ = p.scan()
+			}
+		} else if tok == INTERSECT {
+			stmt.Intersect, _, _ = p.scan()
+		} else {
+			stmt.Except, _, _ = p.scan()
+		}
+
+		if stmt.Compound, err = p.parseSelectStatement(true, nil); err != nil {
+			return &stmt, err
+		}
+	}
+
+	// Parse ORDER BY clause.
+	if !compounded && p.peek() == ORDER {
+		stmt.Order, _, _ = p.scan()
+		if p.peek() != BY {
+			return &stmt, p.errorExpected(p.pos, p.tok, "BY")
+		}
+		stmt.OrderBy, _, _ = p.scan()
+
+		for {
+			term, err := p.parseOrderingTerm()
+			if err != nil {
+				return &stmt, err
+			}
+			stmt.OrderingTerms = append(stmt.OrderingTerms, term)
+
+			if p.peek() != COMMA {
+				break
+			}
+			p.scan()
+		}
+	}
+
+	// Parse LIMIT/OFFSET clause.
+	// The offset is optional. Can be specified with COMMA or OFFSET.
+	// e.g. "LIMIT 1 OFFSET 2" or "LIMIT 1, 2"
+	if !compounded && p.peek() == LIMIT {
+		stmt.Limit, _, _ = p.scan()
+		if stmt.LimitExpr, err = p.ParseExpr(); err != nil {
+			return &stmt, err
+		}
+
+		if tok := p.peek(); tok == OFFSET || tok == COMMA {
+			if tok == OFFSET {
+				stmt.Offset, _, _ = p.scan()
+			} else {
+				stmt.OffsetComma, _, _ = p.scan()
+			}
+			if stmt.OffsetExpr, err = p.ParseExpr(); err != nil {
+				return &stmt, err
+			}
+		}
+	}
+
+	return &stmt, nil
+}
+
+func (p *Parser) parseResultColumn() (_ *ResultColumn, err error) {
+	var col ResultColumn
+
+	// An initial "*" returns all columns.
+	if p.peek() == STAR {
+		col.Star, _, _ = p.scan()
+		return &col, nil
+	}
+
+	// Next can be either "EXPR [[AS] column-alias]" or "IDENT DOT STAR".
+	// We need read the next element as an expression and then determine what next.
+	if col.Expr, err = p.ParseExpr(); err != nil {
+		return &col, err
+	}
+
+	// If we have a qualified ref w/ a star, don't allow an alias.
+	//if ref, ok := col.Expr.(*QualifiedRef); ok && ref.Star.IsValid() {
+	//	return &col, nil
+	//}
+
+	// If "AS" is next, the alias must follow.
+	// Otherwise it can optionally be an IDENT alias.
+	if p.peek() == AS {
+		col.As, _, _ = p.scan()
+		if !isIdentToken(p.peek()) {
+			return &col, p.errorExpected(p.pos, p.tok, "column alias")
+		}
+		col.Alias, _ = p.parseIdent("column alias")
+	} else if isIdentToken(p.peek()) {
+		col.Alias, _ = p.parseIdent("column alias")
+	}
+
+	return &col, nil
+}
+
+func (p *Parser) parseOrderingTerm() (_ *OrderingTerm, err error) {
+	var term OrderingTerm
+	if term.X, err = p.ParseExpr(); err != nil {
+		return &term, err
+	}
+
+	//// Parse optional "COLLATE"
+	//if p.peek() == COLLATE {
+	//	if term.Collation, err = p.parseCollationClause(); err != nil {
+	//		return &term, err
+	//	}
+	//}
+
+	// Parse optional sort direction ("ASC" or "DESC")
+	switch p.peek() {
+	case ASC:
+		term.Asc, _, _ = p.scan()
+	case DESC:
+		term.Desc, _, _ = p.scan()
+	}
+
+	// Parse optional "NULLS FIRST" or "NULLS LAST"
+	if p.peek() == NULLS {
+		term.Nulls, _, _ = p.scan()
+		switch p.peek() {
+		case FIRST:
+			term.NullsFirst, _, _ = p.scan()
+		case LAST:
+			term.NullsLast, _, _ = p.scan()
+		default:
+			return &term, p.errorExpected(p.pos, p.tok, "FIRST or LAST")
+		}
+	}
+
+	return &term, nil
+}
+
+func (p *Parser) parseSource() (source Source, err error) {
+	source, err = p.parseUnarySource()
+	if err != nil {
+		return source, err
+	}
+
+	for {
+		// Exit immediately if not part of a join operator.
+		switch p.peek() {
+		case COMMA, NATURAL, LEFT, INNER, CROSS, JOIN:
+		default:
+			return source, nil
+		}
+
+		// Parse join operator.
+		operator, err := p.parseJoinOperator()
+		if err != nil {
+			return source, err
+		}
+		y, err := p.parseUnarySource()
+		if err != nil {
+			return source, err
+		}
+		constraint, err := p.parseJoinConstraint()
+		if err != nil {
+			return source, err
+		}
+
+		// Rewrite last source to nest next join on right side.
+		if lhs, ok := source.(*JoinClause); ok {
+			source = &JoinClause{
+				X:        lhs.X,
+				Operator: lhs.Operator,
+				Y: &JoinClause{
+					X:          lhs.Y,
+					Operator:   operator,
+					Y:          y,
+					Constraint: constraint,
+				},
+				Constraint: lhs.Constraint,
+			}
+		} else {
+			source = &JoinClause{X: source, Operator: operator, Y: y, Constraint: constraint}
+		}
+	}
+}
+
+// parseUnarySource parses a qualified table name, table function name, or subquery but not a JOIN.
+func (p *Parser) parseUnarySource() (source Source, err error) {
+	switch p.peek() {
+	case LP:
+		return p.parseParenSource()
+	case IDENT, QIDENT:
+		return p.parseQualifiedTable(true, true, true)
+	case VALUES:
+		return p.parseSelectStatement(false, nil)
+	default:
+		return nil, p.errorExpected(p.pos, p.tok, "table name or left paren")
+	}
+}
+
+func (p *Parser) parseJoinOperator() (*JoinOperator, error) {
+	var op JoinOperator
+
+	// Handle single comma join.
+	if p.peek() == COMMA {
+		op.Comma, _, _ = p.scan()
+		return &op, nil
+	}
+
+	if p.peek() == NATURAL {
+		op.Natural, _, _ = p.scan()
+	}
+
+	// Parse "LEFT", "LEFT OUTER", "INNER", or "CROSS"
+	switch p.peek() {
+	case LEFT:
+		op.Left, _, _ = p.scan()
+		if p.peek() == OUTER {
+			op.Outer, _, _ = p.scan()
+		}
+	case INNER:
+		op.Inner, _, _ = p.scan()
+	case CROSS:
+		op.Cross, _, _ = p.scan()
+	}
+
+	// Parse final JOIN.
+	if p.peek() != JOIN {
+		return &op, p.errorExpected(p.pos, p.tok, "JOIN")
+	}
+	op.Join, _, _ = p.scan()
+
+	return &op, nil
+}
+
+func (p *Parser) parseJoinConstraint() (JoinConstraint, error) {
+	switch p.peek() {
+	case ON:
+		return p.parseOnConstraint()
+	case USING:
+		return p.parseUsingConstraint()
+	default:
+		return nil, nil
+	}
+}
+
+func (p *Parser) parseOnConstraint() (_ *OnConstraint, err error) {
+	assert(p.peek() == ON)
+
+	var con OnConstraint
+	con.On, _, _ = p.scan()
+	if con.X, err = p.ParseExpr(); err != nil {
+		return &con, err
+	}
+	return &con, nil
+}
+
+func (p *Parser) parseUsingConstraint() (*UsingConstraint, error) {
+	assert(p.peek() == USING)
+
+	var con UsingConstraint
+	con.Using, _, _ = p.scan()
+
+	if p.peek() != LP {
+		return &con, p.errorExpected(p.pos, p.tok, "left paren")
+	}
+	con.Lparen, _, _ = p.scan()
+
+	for {
+		col, err := p.parseIdent("column name")
+		if err != nil {
+			return &con, err
+		}
+		con.Columns = append(con.Columns, col)
+
+		if p.peek() == RP {
+			break
+		} else if p.peek() != COMMA {
+			return &con, p.errorExpected(p.pos, p.tok, "comma or right paren")
+		}
+		p.scan()
+	}
+	con.Rparen, _, _ = p.scan()
+
+	return &con, nil
+}
+
+func (p *Parser) parseParenSource() (_ *ParenSource, err error) {
+	assert(p.peek() == LP)
+
+	var source ParenSource
+	source.Lparen, _, _ = p.scan()
+
+	if p.peek() == SELECT {
+		if source.X, err = p.parseSelectStatement(false, nil); err != nil {
+			return &source, err
+		}
+	} else {
+		if source.X, err = p.parseSource(); err != nil {
+			return &source, err
+		}
+	}
+
+	if p.peek() != RP {
+		return nil, p.errorExpected(p.pos, p.tok, "right paren")
+	}
+	source.Rparen, _, _ = p.scan()
+
+	if p.peek() == AS || isIdentToken(p.peek()) {
+		if p.peek() == AS {
+			source.As, _, _ = p.scan()
+		}
+		if source.Alias, err = p.parseIdent("table alias"); err != nil {
+			return &source, err
+		}
+	}
+
+	return &source, nil
+}
+
+func (p *Parser) parseQualifiedTable(schemaOK, aliasOK, indexedOK bool) (_ Source, err error) {
+	if !isIdentToken(p.peek()) {
+		return nil, p.errorExpected(p.pos, p.tok, "table name")
+	}
+	ident, _ := p.parseIdent("table name")
+	if p.peek() == LP {
+		return p.parseQualifiedTableFunctionName(ident)
+	}
+	return p.parseQualifiedTableName(ident, schemaOK, aliasOK, indexedOK)
+}
+
+func (p *Parser) parseQualifiedTableName(ident *Ident, schemaOK, aliasOK, indexedOK bool) (_ *QualifiedTableName, err error) {
+	var tbl QualifiedTableName
+
+	if tok := p.peek(); tok == DOT {
+		if !schemaOK {
+			return &tbl, p.errorExpected(p.pos, p.tok, "unqualified table name")
+		}
+		tbl.Schema = ident
+		tbl.Dot, _, _ = p.scan()
+
+		if tbl.Name, err = p.parseIdent("table name"); err != nil {
+			return &tbl, err
+		}
+	} else {
+		tbl.Name = ident
+	}
+
+	// Parse optional table alias ("AS alias" or just "alias").
+	if tok := p.peek(); tok == AS || isIdentToken(tok) {
+		if !aliasOK {
+			return &tbl, p.errorExpected(p.pos, p.tok, "unqualified table name")
+		}
+		if p.peek() == AS {
+			tbl.As, _, _ = p.scan()
+		}
+		if tbl.Alias, err = p.parseIdent("table alias"); err != nil {
+			return &tbl, err
+		}
+	}
+	// Parse optional "INDEXED BY index-name" or "NOT INDEXED".
+	switch p.peek() {
+	case INDEXED:
+		if !indexedOK {
+			return &tbl, p.errorExpected(p.pos, p.tok, "unqualified table name")
+		}
+		tbl.Indexed, _, _ = p.scan()
+		if p.peek() != BY {
+			return &tbl, p.errorExpected(p.pos, p.tok, "BY")
+		}
+		tbl.IndexedBy, _, _ = p.scan()
+
+		if tbl.Index, err = p.parseIdent("index name"); err != nil {
+			return &tbl, err
+		}
+	case NOT:
+		tbl.Not, _, _ = p.scan()
+		if p.peek() != INDEXED {
+			return &tbl, p.errorExpected(p.pos, p.tok, "INDEXED")
+		}
+		if !indexedOK {
+			return &tbl, p.errorExpected(p.pos, p.tok, "unqualified table name")
+		}
+		tbl.NotIndexed, _, _ = p.scan()
+	}
+
+	return &tbl, nil
+}
+
+func (p *Parser) parseQualifiedTableFunctionName(ident *Ident) (_ *QualifiedTableFunctionName, err error) {
+	assert(p.peek() == LP)
+
+	var tbl QualifiedTableFunctionName
+	tbl.Name = ident
+
+	tbl.Lparen, _, _ = p.scan()
+	for {
+		expr, err := p.ParseExpr()
+		if err != nil {
+			return &tbl, err
+		}
+		tbl.Args = append(tbl.Args, expr)
+
+		if p.peek() == RP {
+			break
+		} else if p.peek() != COMMA {
+			return &tbl, p.errorExpected(p.pos, p.tok, "comma or right paren")
+		}
+		p.scan()
+	}
+	tbl.Rparen, _, _ = p.scan()
+
+	// Parse optional table alias ("AS alias" or just "alias").
+	if tok := p.peek(); tok == AS || isIdentToken(tok) {
+		if p.peek() == AS {
+			tbl.As, _, _ = p.scan()
+		}
+		if tbl.Alias, err = p.parseIdent("table function alias"); err != nil {
+			return &tbl, err
+		}
+	}
+
+	return &tbl, nil
+}
+
+func (p *Parser) parseWithClause() (*WithClause, error) {
+	assert(p.peek() == WITH)
+
+	var clause WithClause
+	clause.With, _, _ = p.scan()
+	if p.peek() == RECURSIVE {
+		clause.Recursive, _, _ = p.scan()
+	}
+
+	// Parse comma-delimited list of common table expressions (CTE).
+	for {
+		cte, err := p.parseCTE()
+		if err != nil {
+			return &clause, err
+		}
+		clause.CTEs = append(clause.CTEs, cte)
+
+		if p.peek() != COMMA {
+			break
+		}
+		p.scan()
+	}
+	return &clause, nil
+}
+
+func (p *Parser) parseCTE() (_ *CTE, err error) {
+	var cte CTE
+	if cte.TableName, err = p.parseIdent("table name"); err != nil {
+		return &cte, err
+	}
+
+	// Parse optional column list.
+	if p.peek() == LP {
+		cte.ColumnsLparen, _, _ = p.scan()
+
+		for {
+			column, err := p.parseIdent("column name")
+			if err != nil {
+				return &cte, err
+			}
+			cte.Columns = append(cte.Columns, column)
+
+			if p.peek() == RP {
+				break
+			} else if p.peek() != COMMA {
+				return nil, p.errorExpected(p.pos, p.tok, "comma or right paren")
+			}
+			p.scan()
+		}
+		cte.ColumnsRparen, _, _ = p.scan()
+	}
+
+	if p.peek() != AS {
+		return nil, p.errorExpected(p.pos, p.tok, "AS")
+	}
+	cte.As, _, _ = p.scan()
+
+	// Parse select statement.
+	if p.peek() != LP {
+		return nil, p.errorExpected(p.pos, p.tok, "left paren")
+	}
+	cte.SelectLparen, _, _ = p.scan()
+
+	if cte.Select, err = p.parseSelectStatement(false, nil); err != nil {
+		return &cte, err
+	}
+
+	if p.peek() != RP {
+		return nil, p.errorExpected(p.pos, p.tok, "right paren")
+	}
+	cte.SelectRparen, _, _ = p.scan()
+
+	return &cte, nil
+}
+
+func (p *Parser) parseOverClause() (_ *OverClause, err error) {
+	assert(p.peek() == OVER)
+
+	var clause OverClause
+	clause.Over, _, _ = p.scan()
+
+	// If specifying a window name, read it and exit.
+	if isIdentToken(p.peek()) {
+		pos, tok, lit := p.scan()
+		clause.Name = &Ident{Name: lit, NamePos: pos, Quoted: tok == QIDENT}
+		return &clause, nil
+	}
+
+	if clause.Definition, err = p.parseWindowDefinition(); err != nil {
+		return &clause, err
+	}
+	return &clause, nil
+}
+
+func (p *Parser) parseWindowDefinition() (_ *WindowDefinition, err error) {
+	var def WindowDefinition
+
+	// Otherwise parse the window definition.
+	if p.peek() != LP {
+		return &def, p.errorExpected(p.pos, p.tok, "left paren")
+	}
+	def.Lparen, _, _ = p.scan()
+
+	// Read base window name.
+	if isIdentToken(p.peek()) {
+		pos, tok, lit := p.scan()
+		def.Base = &Ident{Name: lit, NamePos: pos, Quoted: tok == QIDENT}
+	}
+
+	// Parse "PARTITION BY expr, expr..."
+	if p.peek() == PARTITION {
+		def.Partition, _, _ = p.scan()
+		if p.peek() != BY {
+			return &def, p.errorExpected(p.pos, p.tok, "BY")
+		}
+		def.PartitionBy, _, _ = p.scan()
+
+		for {
+			partition, err := p.ParseExpr()
+			if err != nil {
+				return &def, err
+			}
+			def.Partitions = append(def.Partitions, partition)
+
+			if p.peek() != COMMA {
+				break
+			}
+			p.scan()
+		}
+	}
+
+	// Parse "ORDER BY ordering-term, ordering-term..."
+	if p.peek() == ORDER {
+		def.Order, _, _ = p.scan()
+		if p.peek() != BY {
+			return &def, p.errorExpected(p.pos, p.tok, "BY")
+		}
+		def.OrderBy, _, _ = p.scan()
+
+		for {
+			term, err := p.parseOrderingTerm()
+			if err != nil {
+				return &def, err
+			}
+			def.OrderingTerms = append(def.OrderingTerms, term)
+
+			if p.peek() != COMMA {
+				break
+			}
+			p.scan()
+		}
+	}
+
+	// Parse final rparen.
+	if p.peek() != RP {
+		return &def, p.errorExpected(p.pos, p.tok, "right paren")
+	}
+	def.Rparen, _, _ = p.scan()
+
+	return &def, nil
+}
+
+// parseWithStatement is called only from parseNonExplainStatement as we don't
+// know what kind of statement we'll have after the CTEs (e.g. SELECT, INSERT, etc).
+func (p *Parser) parseWithStatement(inTrigger bool) (Statement, error) {
+	withClause, err := p.parseWithClause()
+	if err != nil {
+		return nil, err
+	}
+
+	switch p.peek() {
+	case SELECT, VALUES:
+		return p.parseSelectStatement(false, withClause)
+	default:
+		return nil, p.errorExpected(p.pos, p.tok, "SELECT, VALUES, INSERT, REPLACE, UPDATE, or DELETE")
+	}
+}
+
+func isTypeName(s string) bool {
+	switch s {
+	case "BIGINT", "BLOB", "BOOLEAN", "CHARACTER", "CLOB", "DATE", "DATETIME",
+		"DECIMAL", "DOUBLE", "FLOAT", "INT", "INTEGER", "MEDIUMINT", "NCHAR",
+		"NUMERIC", "NVARCHAR", "REAL", "SMALLINT", "TEXT", "TINYINT", "VARCHAR":
+		return true
+	default:
+		return false
+	}
+}

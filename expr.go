@@ -274,6 +274,14 @@ func (i *Ident) String() string {
 	return `"` + strings.Replace(i.Name, `"`, `""`, -1) + `"`
 }
 
+// IdentName returns the name of ident. Returns a blank string if ident is nil.
+func IdentName(ident *Ident) string {
+	if ident == nil {
+		return ""
+	}
+	return ident.Name
+}
+
 type ParenExpr struct {
 	Lparen Pos  // position of left paren
 	X      Expr // parenthesized expression
