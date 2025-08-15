@@ -16,20 +16,26 @@ type Expr interface {
 	expr()
 }
 
-func (*BinaryExpr) node() {}
-func (*Null) node()       {}
-func (*ExprList) node()   {}
-func (*Ident) node()      {}
-func (*ParenExpr) node()  {}
-func (*UnaryExpr) node()  {}
+func (*BinaryExpr) node()   {}
+func (*Call) node()         {}
+func (*CastExpr) node()     {}
+func (*Null) node()         {}
+func (*ExprList) node()     {}
+func (*Ident) node()        {}
+func (*ParenExpr) node()    {}
+func (*QualifiedRef) node() {}
+func (*UnaryExpr) node()    {}
 
 // Expression Types
-func (*BinaryExpr) expr() {}
-func (*Null) expr()       {}
-func (*ExprList) expr()   {}
-func (*Ident) expr()      {}
-func (*ParenExpr) expr()  {}
-func (*UnaryExpr) expr()  {}
+func (*BinaryExpr) expr()   {}
+func (*Call) expr()         {}
+func (*CastExpr) expr()     {}
+func (*Null) expr()         {}
+func (*ExprList) expr()     {}
+func (*Ident) expr()        {}
+func (*ParenExpr) expr()    {}
+func (*QualifiedRef) expr() {}
+func (*UnaryExpr) expr()    {}
 
 // CloneExpr returns a deep copy expr.
 func CloneExpr(expr Expr) Expr {
@@ -44,6 +50,10 @@ func CloneExpr(expr Expr) Expr {
 		return expr.Clone()
 	case *BoolLit:
 		return expr.Clone()
+	case *Call:
+		return expr.Clone()
+	case *CastExpr:
+		return expr.Clone()
 	case *Null:
 		return expr.Clone()
 	case *ExprList:
@@ -55,6 +65,8 @@ func CloneExpr(expr Expr) Expr {
 	case *NumberLit:
 		return expr.Clone()
 	case *ParenExpr:
+		return expr.Clone()
+	case *QualifiedRef:
 		return expr.Clone()
 	case *StringLit:
 		return expr.Clone()
@@ -170,6 +182,107 @@ func (expr *BinaryExpr) String() string {
 	default:
 		panic(fmt.Sprintf("query.BinaryExpr.String(): invalid op %s", expr.Op))
 	}
+}
+
+type Call struct {
+	Name     *Ident // function name
+	Lparen   Pos    // position of left paren
+	Star     Pos    // position of *
+	Distinct Pos    // position of DISTINCT keyword
+	Args     []Expr // argument list
+	Rparen   Pos    // position of right paren
+}
+
+// Clone returns a deep copy of c.
+func (c *Call) Clone() *Call {
+	if c == nil {
+		return nil
+	}
+	other := *c
+	other.Name = c.Name.Clone()
+	other.Args = cloneExprs(c.Args)
+	return &other
+}
+
+// String returns the string representation of the expression.
+func (c *Call) String() string {
+	var buf bytes.Buffer
+	buf.WriteString(c.Name.Name)
+	buf.WriteString("(")
+	if c.Star.IsValid() {
+		buf.WriteString("*")
+	} else {
+		if c.Distinct.IsValid() {
+			buf.WriteString("DISTINCT")
+			if len(c.Args) != 0 {
+				buf.WriteString(" ")
+			}
+		}
+		for i, arg := range c.Args {
+			if i != 0 {
+				buf.WriteString(", ")
+			}
+			buf.WriteString(arg.String())
+		}
+	}
+	buf.WriteString(")")
+
+	return buf.String()
+}
+
+type CastExpr struct {
+	Cast   Pos   // position of CAST keyword
+	Lparen Pos   // position of left paren
+	X      Expr  // target expression
+	As     Pos   // position of AS keyword
+	Type   *Type // cast type
+	Rparen Pos   // position of right paren
+}
+
+// Clone returns a deep copy of expr.
+func (expr *CastExpr) Clone() *CastExpr {
+	if expr == nil {
+		return nil
+	}
+	other := *expr
+	other.X = CloneExpr(expr.X)
+	other.Type = expr.Type.Clone()
+	return &other
+}
+
+// String returns the string representation of the expression.
+func (expr *CastExpr) String() string {
+	return fmt.Sprintf("CAST(%s AS %s)", expr.X.String(), expr.Type.String())
+}
+
+type Type struct {
+	Name      *Ident     // type name
+	Lparen    Pos        // position of left paren (optional)
+	Precision *NumberLit // precision (optional)
+	Scale     *NumberLit // scale (optional)
+	Rparen    Pos        // position of right paren (optional)
+}
+
+// Clone returns a deep copy of t.
+func (t *Type) Clone() *Type {
+	if t == nil {
+		return nil
+	}
+	other := *t
+	other.Name = t.Name.Clone()
+	other.Precision = t.Precision.Clone()
+	other.Scale = t.Scale.Clone()
+	return &other
+}
+
+// String returns the string representation of the type.
+func (t *Type) String() string {
+	if t.Precision != nil && t.Scale != nil {
+		return fmt.Sprintf("%s(%s,%s)", t.Name.Name, t.Precision.String(), t.Scale.String())
+	} else if t.Precision != nil {
+		return fmt.Sprintf("%s(%s)", t.Name.Name, t.Precision.String())
+	}
+	return t.Name.Name
 }
 
 type Null struct {
@@ -301,6 +414,32 @@ func (expr *ParenExpr) Clone() *ParenExpr {
 // String returns the string representation of the expression.
 func (expr *ParenExpr) String() string {
 	return fmt.Sprintf("(%s)", expr.X.String())
+}
+
+type QualifiedRef struct {
+	Table  *Ident // table name
+	Dot    Pos    // position of dot
+	Star   Pos    // position of * (result column only)
+	Column *Ident // column name
+}
+
+// Clone returns a deep copy of r.
+func (r *QualifiedRef) Clone() *QualifiedRef {
+	if r == nil {
+		return nil
+	}
+	other := *r
+	other.Table = r.Table.Clone()
+	other.Column = r.Column.Clone()
+	return &other
+}
+
+// String returns the string representation of the expression.
+func (r *QualifiedRef) String() string {
+	if r.Star.IsValid() {
+		return fmt.Sprintf("%s.*", r.Table.String())
+	}
+	return fmt.Sprintf("%s.%s", r.Table.String(), r.Column.String())
 }
 
 type UnaryExpr struct {

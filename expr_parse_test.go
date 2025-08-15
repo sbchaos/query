@@ -60,9 +60,32 @@ func TestBinaryExpr_String(t *testing.T) {
 	AssertNodeStringerPanic(t, &query.BinaryExpr{}, `query.BinaryExpr.String(): invalid op ILLEGAL`)
 }
 
+func TestCastExpr_String(t *testing.T) {
+	AssertExprStringer(t, &query.CastExpr{X: &query.NumberLit{Value: "1"}, Type: &query.Type{Name: &query.Ident{Name: "INTEGER"}}}, `CAST(1 AS INTEGER)`)
+}
+
 func TestExprList_String(t *testing.T) {
 	AssertExprStringer(t, &query.ExprList{Exprs: []query.Expr{&query.NullLit{}}}, `(NULL)`)
 	AssertExprStringer(t, &query.ExprList{Exprs: []query.Expr{&query.NullLit{}, &query.NullLit{}}}, `(NULL, NULL)`)
+}
+
+func TestQualifiedRef_String(t *testing.T) {
+	AssertExprStringer(t, &query.QualifiedRef{Table: &query.Ident{Name: "tbl"}, Column: &query.Ident{Name: "col"}}, `"tbl"."col"`)
+	AssertExprStringer(t, &query.QualifiedRef{Table: &query.Ident{Name: "tbl"}, Star: pos(0)}, `"tbl".*`)
+}
+
+func TestCall_String(t *testing.T) {
+	AssertExprStringer(t, &query.Call{Name: &query.Ident{Name: "foo"}}, `foo()`)
+	AssertExprStringer(t, &query.Call{Name: &query.Ident{Name: "foo"}, Star: pos(0)}, `foo(*)`)
+
+	AssertExprStringer(t, &query.Call{
+		Name:     &query.Ident{Name: "foo"},
+		Distinct: pos(0),
+		Args: []query.Expr{
+			&query.NullLit{},
+			&query.NullLit{},
+		},
+	}, `foo(DISTINCT NULL, NULL)`)
 }
 
 func TestParser_ParseExpr(t *testing.T) {
@@ -93,6 +116,19 @@ func TestParser_ParseExpr(t *testing.T) {
 		AssertParseExpr(t, `NOT foo`, &query.UnaryExpr{OpPos: pos(0), Op: query.NOT, X: &query.Ident{NamePos: pos(4), Name: "foo"}})
 		AssertParseExpr(t, `~1`, &query.UnaryExpr{OpPos: pos(0), Op: query.BITNOT, X: &query.NumberLit{ValuePos: pos(1), Value: "1"}})
 		AssertParseExprError(t, `-`, `1:1: expected expression, found 'EOF'`)
+	})
+	t.Run("QualifiedRef", func(t *testing.T) {
+		AssertParseExpr(t, `tbl.col`, &query.QualifiedRef{
+			Table:  &query.Ident{NamePos: pos(0), Name: "tbl"},
+			Dot:    pos(3),
+			Column: &query.Ident{NamePos: pos(4), Name: "col"},
+		})
+		AssertParseExpr(t, `"tbl"."col"`, &query.QualifiedRef{
+			Table:  &query.Ident{NamePos: pos(0), Name: "tbl", Quoted: true},
+			Dot:    pos(5),
+			Column: &query.Ident{NamePos: pos(6), Name: "col", Quoted: true},
+		})
+		AssertParseExprError(t, `tbl.`, `1:4: expected column name, found 'EOF'`)
 	})
 
 	t.Run("BinaryExpr", func(t *testing.T) {
@@ -278,6 +314,81 @@ func TestParser_ParseExpr(t *testing.T) {
 		AssertParseExprError(t, `1 BETWEEN 2`, `1:11: expected range expression, found 'EOF'`)
 		AssertParseExprError(t, `1 BETWEEN 2 + 3`, `1:15: expected range expression, found 'EOF'`)
 		AssertParseExprError(t, `1 + `, `1:4: expected expression, found 'EOF'`)
+	})
+	t.Run("Call", func(t *testing.T) {
+		AssertParseExpr(t, `sum()`, &query.Call{
+			Name:   &query.Ident{NamePos: pos(0), Name: "sum"},
+			Lparen: pos(3),
+			Rparen: pos(4),
+		})
+		AssertParseExpr(t, `sum(*)`, &query.Call{
+			Name:   &query.Ident{NamePos: pos(0), Name: "sum"},
+			Lparen: pos(3),
+			Star:   pos(4),
+			Rparen: pos(5),
+		})
+		AssertParseExpr(t, `sum(foo, 123)`, &query.Call{
+			Name:   &query.Ident{NamePos: pos(0), Name: "sum"},
+			Lparen: pos(3),
+			Args: []query.Expr{
+				&query.Ident{NamePos: pos(4), Name: "foo"},
+				&query.NumberLit{ValuePos: pos(9), Value: "123"},
+			},
+			Rparen: pos(12),
+		})
+		AssertParseExpr(t, `sum(distinct 'foo')`, &query.Call{
+			Name:     &query.Ident{NamePos: pos(0), Name: "sum"},
+			Lparen:   pos(3),
+			Distinct: pos(4),
+			Args: []query.Expr{
+				&query.StringLit{ValuePos: pos(13), Value: "foo"},
+			},
+			Rparen: pos(18),
+		})
+		AssertParseExpr(t, `sum(1, sum(2, 3))`, &query.Call{
+			Name:   &query.Ident{NamePos: pos(0), Name: "sum"},
+			Lparen: pos(3),
+			Args: []query.Expr{
+				&query.NumberLit{ValuePos: pos(4), Value: "1"},
+				&query.Call{
+					Name:   &query.Ident{NamePos: pos(7), Name: "sum"},
+					Lparen: pos(10),
+					Args: []query.Expr{
+						&query.NumberLit{ValuePos: pos(11), Value: "2"},
+						&query.NumberLit{ValuePos: pos(14), Value: "3"},
+					},
+					Rparen: pos(15),
+				},
+			},
+			Rparen: pos(16),
+		})
+		AssertParseExpr(t, `sum(sum(1,2), sum(3, 4))`, &query.Call{
+			Name:   &query.Ident{NamePos: pos(0), Name: "sum"},
+			Lparen: pos(3),
+			Args: []query.Expr{
+				&query.Call{
+					Name:   &query.Ident{NamePos: pos(4), Name: "sum"},
+					Lparen: pos(7),
+					Args: []query.Expr{
+						&query.NumberLit{ValuePos: pos(8), Value: "1"},
+						&query.NumberLit{ValuePos: pos(10), Value: "2"},
+					},
+					Rparen: pos(11),
+				}, &query.Call{
+					Name:   &query.Ident{NamePos: pos(14), Name: "sum"},
+					Lparen: pos(17),
+					Args: []query.Expr{
+						&query.NumberLit{ValuePos: pos(18), Value: "3"},
+						&query.NumberLit{ValuePos: pos(21), Value: "4"},
+					},
+					Rparen: pos(22),
+				},
+			},
+			Rparen: pos(23),
+		})
+		AssertParseExprError(t, `sum(`, `1:4: expected expression, found 'EOF'`)
+		AssertParseExprError(t, `sum(*`, `1:5: expected right paren, found 'EOF'`)
+		AssertParseExprError(t, `sum(foo foo`, `1:9: expected comma or right paren, found foo`)
 	})
 }
 

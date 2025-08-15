@@ -38,6 +38,37 @@ func (p *Parser) parseParenExpr() (Expr, error) {
 	return &list, nil
 }
 
+func (p *Parser) parseCastExpr() (_ *CastExpr, err error) {
+	assert(p.peek() == CAST)
+
+	var expr CastExpr
+	expr.Cast, _, _ = p.scan()
+
+	if p.peek() != LP {
+		return &expr, p.errorExpected(p.pos, p.tok, "left paren")
+	}
+	expr.Lparen, _, _ = p.scan()
+
+	if expr.X, err = p.ParseExpr(); err != nil {
+		return &expr, err
+	}
+
+	if p.peek() != AS {
+		return &expr, p.errorExpected(p.pos, p.tok, "AS")
+	}
+	expr.As, _, _ = p.scan()
+
+	if expr.Type, err = p.parseType(); err != nil {
+		return &expr, err
+	}
+
+	if p.peek() != RP {
+		return &expr, p.errorExpected(p.pos, p.tok, "right paren")
+	}
+	expr.Rparen, _, _ = p.scan()
+	return &expr, nil
+}
+
 func (p *Parser) parseIdent(desc string) (*Ident, error) {
 	pos, tok, lit := p.scan()
 	switch tok {
@@ -53,6 +84,51 @@ func (p *Parser) parseIdent(desc string) (*Ident, error) {
 	}
 }
 
+func (p *Parser) parseType() (_ *Type, err error) {
+	var typ Type
+	for {
+		tok := p.peek()
+		if tok != IDENT && tok != NULL {
+			break
+		}
+		typeName, err := p.parseIdent("type name")
+		if err != nil {
+			return &typ, err
+		}
+		if typ.Name == nil {
+			typ.Name = typeName
+		} else {
+			typ.Name.Name += " " + typeName.Name
+		}
+	}
+
+	if typ.Name == nil {
+		return &typ, p.errorExpected(p.pos, p.tok, "type name")
+	}
+
+	// Optionally parse precision & scale.
+	if p.peek() == LP {
+		typ.Lparen, _, _ = p.scan()
+		if typ.Precision, err = p.parseSignedNumber("precision"); err != nil {
+			return &typ, err
+		}
+
+		if p.peek() == COMMA {
+			p.scan()
+			if typ.Scale, err = p.parseSignedNumber("scale"); err != nil {
+				return &typ, err
+			}
+		}
+
+		if p.peek() != RP {
+			return nil, p.errorExpected(p.pos, p.tok, "right paren")
+		}
+		typ.Rparen, _, _ = p.scan()
+	}
+
+	return &typ, nil
+}
+
 func (p *Parser) ParseExpr() (expr Expr, err error) {
 	return p.parseBinaryExpr(LowestPrec + 1)
 }
@@ -62,6 +138,11 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 	switch {
 	case isExprIdentToken(tok):
 		ident := &Ident{Name: lit, NamePos: pos, Quoted: tok == QIDENT}
+		if p.peek() == DOT {
+			return p.parseQualifiedRef(ident)
+		} else if p.peek() == LP {
+			return p.parseCall(ident)
+		}
 		return ident, nil
 	case tok == STRING:
 		return &StringLit{ValuePos: pos, Value: lit}, nil
@@ -82,6 +163,9 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 	case tok == LP:
 		p.unscan()
 		return p.parseParenExpr()
+	case tok == CAST:
+		p.unscan()
+		return p.parseCastExpr()
 	case tok == NOT:
 		expr, err = p.parseOperand()
 		if err != nil {
@@ -171,4 +255,61 @@ func (p *Parser) parseExprList() (_ *ExprList, err error) {
 	list.Rparen, _, _ = p.scan()
 
 	return &list, nil
+}
+
+func (p *Parser) parseQualifiedRef(table *Ident) (_ *QualifiedRef, err error) {
+	assert(p.peek() == DOT)
+
+	var expr QualifiedRef
+	expr.Table = table
+	expr.Dot, _, _ = p.scan()
+
+	if p.peek() == STAR {
+		expr.Star, _, _ = p.scan()
+	} else if isIdentToken(p.peek()) {
+		pos, tok, lit := p.scan()
+		expr.Column = &Ident{Name: lit, NamePos: pos, Quoted: tok == QIDENT}
+	} else {
+		return &expr, p.errorExpected(p.pos, p.tok, "column name")
+	}
+
+	return &expr, nil
+}
+
+func (p *Parser) parseCall(name *Ident) (_ *Call, err error) {
+	assert(p.peek() == LP)
+
+	var expr Call
+	expr.Name = name
+	expr.Lparen, _, _ = p.scan()
+
+	// Parse argument list: either "*" or "[DISTINCT] expr, expr..."
+	if p.peek() == STAR {
+		expr.Star, _, _ = p.scan()
+	} else {
+		if p.peek() == DISTINCT {
+			expr.Distinct, _, _ = p.scan()
+		}
+		for p.peek() != RP {
+			arg, err := p.ParseExpr()
+			if err != nil {
+				return &expr, err
+			}
+			expr.Args = append(expr.Args, arg)
+
+			if tok := p.peek(); tok == COMMA {
+				p.scan()
+			} else if tok != RP {
+				return &expr, p.errorExpected(p.pos, p.tok, "comma or right paren")
+			}
+
+		}
+	}
+
+	if p.peek() != RP {
+		return &expr, p.errorExpected(p.pos, p.tok, "right paren")
+	}
+	expr.Rparen, _, _ = p.scan()
+
+	return &expr, nil
 }
