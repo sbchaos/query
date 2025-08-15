@@ -373,8 +373,8 @@ func (p *Parser) parseUnarySource() (source Source, err error) {
 	switch p.peek() {
 	case LP:
 		return p.parseParenSource()
-	case IDENT, QIDENT:
-		return p.parseQualifiedTable(true, true, true)
+	case IDENT, QIDENT, TSTRING:
+		return p.parseQualifiedTable(true, true, true, true)
 	case VALUES:
 		return p.parseSelectStatement(false, nil)
 	default:
@@ -502,7 +502,7 @@ func (p *Parser) parseParenSource() (_ *ParenSource, err error) {
 	return &source, nil
 }
 
-func (p *Parser) parseQualifiedTable(schemaOK, aliasOK, indexedOK bool) (_ Source, err error) {
+func (p *Parser) parseQualifiedTable(projectOK, schemaOK, aliasOK, indexedOK bool) (_ Source, err error) {
 	if !isIdentToken(p.peek()) {
 		return nil, p.errorExpected(p.pos, p.tok, "table name")
 	}
@@ -510,21 +510,38 @@ func (p *Parser) parseQualifiedTable(schemaOK, aliasOK, indexedOK bool) (_ Sourc
 	if p.peek() == LP {
 		return p.parseQualifiedTableFunctionName(ident)
 	}
-	return p.parseQualifiedTableName(ident, schemaOK, aliasOK, indexedOK)
+	return p.parseQualifiedTableName(ident, projectOK, schemaOK, aliasOK, indexedOK)
 }
 
-func (p *Parser) parseQualifiedTableName(ident *Ident, schemaOK, aliasOK, indexedOK bool) (_ *QualifiedTableName, err error) {
+func (p *Parser) parseQualifiedTableName(ident *Ident, projectOK, schemaOK, aliasOK, indexedOK bool) (_ *QualifiedTableName, err error) {
 	var tbl QualifiedTableName
 
 	if tok := p.peek(); tok == DOT {
-		if !schemaOK {
+		if !schemaOK && !projectOK {
 			return &tbl, p.errorExpected(p.pos, p.tok, "unqualified table name")
 		}
-		tbl.Schema = ident
-		tbl.Dot, _, _ = p.scan()
 
-		if tbl.Name, err = p.parseIdent("table name"); err != nil {
+		dot1, _, _ := p.scan()
+		var ident1 *Ident
+		if ident1, err = p.parseIdent("table name"); err != nil {
 			return &tbl, err
+		}
+		if tok1 := p.peek(); tok1 == DOT {
+			dot2, _, _ := p.scan()
+			var ident2 *Ident
+			if ident2, err = p.parseIdent("table name"); err != nil {
+				return &tbl, err
+			}
+
+			tbl.Name = ident2
+			tbl.Dot1 = dot1
+			tbl.Schema = ident1
+			tbl.Dot = dot2
+			tbl.Project = ident
+		} else {
+			tbl.Schema = ident
+			tbl.Dot = dot1
+			tbl.Name = ident1
 		}
 	} else {
 		tbl.Name = ident
@@ -691,7 +708,7 @@ func (p *Parser) parseOverClause() (_ *OverClause, err error) {
 	// If specifying a window name, read it and exit.
 	if isIdentToken(p.peek()) {
 		pos, tok, lit := p.scan()
-		clause.Name = &Ident{Name: lit, NamePos: pos, Quoted: tok == QIDENT}
+		clause.Name = &Ident{Name: lit, NamePos: pos, Quote: quoteRune(tok)}
 		return &clause, nil
 	}
 
@@ -713,7 +730,7 @@ func (p *Parser) parseWindowDefinition() (_ *WindowDefinition, err error) {
 	// Read base window name.
 	if isIdentToken(p.peek()) {
 		pos, tok, lit := p.scan()
-		def.Base = &Ident{Name: lit, NamePos: pos, Quoted: tok == QIDENT}
+		def.Base = &Ident{Name: lit, NamePos: pos, Quote: quoteRune(tok)}
 	}
 
 	// Parse "PARTITION BY expr, expr..."

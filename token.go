@@ -38,6 +38,7 @@ const (
 	IDENT   // IDENT
 	QIDENT  // "IDENT"
 	STRING  // 'string'
+	TSTRING // `string`
 	BLOB    // ???
 	FLOAT   // 123.45
 	INTEGER // 123
@@ -511,14 +512,14 @@ func (t Token) IsBinaryOp() bool {
 }
 
 func isIdentToken(tok Token) bool {
-	return tok == IDENT || tok == QIDENT
+	return tok == IDENT || tok == QIDENT || tok == TSTRING
 }
 
 // isExprIdentToken returns true if tok can be used as an identifier in an expression.
 // It includes IDENT, QIDENT, and certain keywords.
 func isExprIdentToken(tok Token) bool {
 	switch tok {
-	case IDENT, QIDENT:
+	case IDENT, QIDENT, TSTRING:
 		return true
 	// List keywords that can be used as identifiers in expressions
 	case ROWID, CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP:

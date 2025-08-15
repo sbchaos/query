@@ -38,7 +38,9 @@ func (s *Scanner) Scan() (pos Pos, token Token, lit string) {
 		} else if ch == '"' {
 			return s.scanQuotedIdent()
 		} else if ch == '\'' {
-			return s.scanString()
+			return s.scanQuotedIdent()
+		} else if ch == '`' {
+			return s.scanQuotedIdent()
 		} else if ch == '?' || ch == ':' || ch == '@' || ch == '$' {
 			return s.scanBind()
 		}
@@ -143,41 +145,28 @@ func (s *Scanner) scanUnquotedIdent(pos Pos, prefix string) (Pos, Token, string)
 
 func (s *Scanner) scanQuotedIdent() (Pos, Token, string) {
 	ch, pos := s.read()
-	assert(ch == '"')
-
-	s.buf.Reset()
-	for {
-		ch, _ := s.read()
-		if ch == -1 {
-			return pos, ILLEGAL, `"` + s.buf.String()
-		} else if ch == '"' {
-			if s.peek() == '"' { // escaped quote
-				s.read()
-				s.buf.WriteRune('"')
-				continue
-			}
-			return pos, QIDENT, s.buf.String()
-		}
-		s.buf.WriteRune(ch)
+	endCh := '"'
+	tok := QIDENT
+	if ch == '\'' {
+		endCh = '\''
+		tok = STRING
+	} else if ch == '`' {
+		endCh = '`'
+		tok = TSTRING
 	}
-}
-
-func (s *Scanner) scanString() (Pos, Token, string) {
-	ch, pos := s.read()
-	assert(ch == '\'')
 
 	s.buf.Reset()
 	for {
 		ch, _ := s.read()
 		if ch == -1 {
-			return pos, ILLEGAL, `'` + s.buf.String()
-		} else if ch == '\'' {
-			if s.peek() == '\'' { // escaped quote
+			return pos, ILLEGAL, string(endCh) + s.buf.String()
+		} else if ch == endCh {
+			if s.peek() == endCh { // escaped quote
 				s.read()
-				s.buf.WriteRune('\'')
+				s.buf.WriteRune(endCh)
 				continue
 			}
-			return pos, STRING, s.buf.String()
+			return pos, tok, s.buf.String()
 		}
 		s.buf.WriteRune(ch)
 	}
@@ -408,4 +397,34 @@ func IsInteger(s string) bool {
 		}
 	}
 	return s != ""
+}
+
+func quoteType(ch rune) Token {
+	tok := QIDENT
+	if ch == '\'' {
+		tok = STRING
+	} else if ch == '`' {
+		tok = TSTRING
+	}
+	return tok
+}
+
+func quoteRune(tok Token) rune {
+	if tok == STRING {
+		return '\''
+	} else if tok == TSTRING {
+		return '`'
+	}
+	return '"'
+}
+
+func endQuote(ch rune) rune {
+	switch ch {
+	case '\'':
+		return '\''
+	case '`':
+		return '`'
+	default:
+		return '"'
+	}
 }

@@ -1,7 +1,5 @@
 package query
 
-import "strings"
-
 func (*BlobLit) node()      {}
 func (*BoolLit) node()      {}
 func (*NullLit) node()      {}
@@ -98,6 +96,7 @@ func (lit *NumberLit) String() string {
 type StringLit struct {
 	ValuePos Pos    // literal position
 	Value    string // literal value (without quotes)
+	Quote    rune   // type of quote
 }
 
 // Clone returns a deep copy of lit.
@@ -111,7 +110,10 @@ func (lit *StringLit) Clone() *StringLit {
 
 // String returns the string representation of the expression.
 func (lit *StringLit) String() string {
-	return `'` + strings.Replace(lit.Value, `'`, `''`, -1) + `'`
+	if lit.Quote == 0 {
+		return lit.Value
+	}
+	return string(lit.Quote) + lit.Value + string(endQuote(lit.Quote))
 }
 
 type TimestampLit struct {

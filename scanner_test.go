@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/sbchaos/query"
 )
 
@@ -58,6 +60,9 @@ func TestScanner_Scan(t *testing.T) {
 	t.Run("STRING", func(t *testing.T) {
 		t.Run("OK", func(t *testing.T) {
 			AssertScan(t, `'this is ''a'' string'`, query.STRING, `this is 'a' string`)
+		})
+		t.Run("Allow ticks", func(t *testing.T) {
+			AssertScan(t, "`table`", query.TSTRING, `table`)
 		})
 		t.Run("NoEndQuote", func(t *testing.T) {
 			AssertScan(t, `'unfinished`, query.ILLEGAL, `'unfinished`)
@@ -199,9 +204,8 @@ func TestScanner_Scan(t *testing.T) {
 func AssertScan(tb testing.TB, s string, expectedTok query.Token, expectedLit string) {
 	tb.Helper()
 	_, tok, lit := query.NewScanner(strings.NewReader(s)).Scan()
-	if tok != expectedTok || lit != expectedLit {
-		tb.Fatalf("Scan(%q)=<%s,%s>, want <%s,%s>", s, tok, lit, expectedTok, expectedLit)
-	}
+	assert.Equal(tb, expectedLit, lit)
+	assert.Equal(tb, expectedTok, tok)
 }
 
 func Benchmark_NewScanner(b *testing.B) {

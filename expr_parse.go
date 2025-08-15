@@ -72,8 +72,12 @@ func (p *Parser) parseCastExpr() (_ *CastExpr, err error) {
 func (p *Parser) parseIdent(desc string) (*Ident, error) {
 	pos, tok, lit := p.scan()
 	switch tok {
-	case IDENT, QIDENT:
-		return &Ident{Name: lit, NamePos: pos, Quoted: tok == QIDENT}, nil
+	case IDENT:
+		return &Ident{Name: lit, NamePos: pos}, nil
+	case QIDENT:
+		return &Ident{Name: lit, NamePos: pos, Quote: '"'}, nil
+	case TSTRING:
+		return &Ident{Name: lit, NamePos: pos, Quote: '`'}, nil
 	case NULL:
 		return &Ident{Name: lit, NamePos: pos}, nil
 	default:
@@ -137,7 +141,7 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 	pos, tok, lit := p.scan()
 	switch {
 	case isExprIdentToken(tok):
-		ident := &Ident{Name: lit, NamePos: pos, Quoted: tok == QIDENT}
+		ident := &Ident{Name: lit, NamePos: pos, Quote: quoteRune(tok)}
 		if p.peek() == DOT {
 			return p.parseQualifiedRef(ident)
 		} else if p.peek() == LP {
@@ -268,7 +272,7 @@ func (p *Parser) parseQualifiedRef(table *Ident) (_ *QualifiedRef, err error) {
 		expr.Star, _, _ = p.scan()
 	} else if isIdentToken(p.peek()) {
 		pos, tok, lit := p.scan()
-		expr.Column = &Ident{Name: lit, NamePos: pos, Quoted: tok == QIDENT}
+		expr.Column = &Ident{Name: lit, NamePos: pos, Quote: quoteRune(tok)}
 	} else {
 		return &expr, p.errorExpected(p.pos, p.tok, "column name")
 	}

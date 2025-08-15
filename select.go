@@ -444,6 +444,8 @@ func ResolveSource(root Source, name string) Source {
 }
 
 type QualifiedTableName struct {
+	Project    *Ident // project name
+	Dot1       Pos    // dot after project
 	Schema     *Ident // schema name
 	Dot        Pos    // position of dot
 	Name       *Ident // table name
@@ -471,6 +473,7 @@ func (n *QualifiedTableName) Clone() *QualifiedTableName {
 		return nil
 	}
 	other := *n
+	other.Project = n.Project.Clone()
 	other.Schema = n.Schema.Clone()
 	other.Name = n.Name.Clone()
 	other.Alias = n.Alias.Clone()
@@ -481,6 +484,10 @@ func (n *QualifiedTableName) Clone() *QualifiedTableName {
 // String returns the string representation of the table name.
 func (n *QualifiedTableName) String() string {
 	var buf bytes.Buffer
+	if n.Project != nil {
+		buf.WriteString(n.Project.String())
+		buf.WriteString(".")
+	}
 	if n.Schema != nil {
 		buf.WriteString(n.Schema.String())
 		buf.WriteString(".")

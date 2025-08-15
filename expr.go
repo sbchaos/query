@@ -3,7 +3,6 @@ package query
 import (
 	"bytes"
 	"fmt"
-	"strings"
 )
 
 type Node interface {
@@ -359,7 +358,7 @@ func (l *ExprList) String() string {
 type Ident struct {
 	NamePos Pos    // identifier position
 	Name    string // identifier name
-	Quoted  bool   // true if double quoted
+	Quote   rune   // type of quote
 }
 
 // Clone returns a deep copy of i.
@@ -384,7 +383,11 @@ func cloneIdents(a []*Ident) []*Ident {
 
 // String returns the string representation of the expression.
 func (i *Ident) String() string {
-	return `"` + strings.Replace(i.Name, `"`, `""`, -1) + `"`
+	if i.Quote == 0 {
+		return i.Name
+	}
+
+	return string(i.Quote) + i.Name + string(i.Quote)
 }
 
 // IdentName returns the name of ident. Returns a blank string if ident is nil.

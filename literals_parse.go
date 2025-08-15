@@ -23,7 +23,7 @@ func (p *Parser) mustParseLiteral() Expr {
 	pos, tok, lit := p.scan()
 	switch tok {
 	case STRING:
-		return &StringLit{ValuePos: pos, Value: lit}
+		return &StringLit{ValuePos: pos, Value: lit, Quote: '\''}
 	case CURRENT_TIME, CURRENT_DATE, CURRENT_TIMESTAMP:
 		return &TimestampLit{ValuePos: pos, Value: lit}
 	case BLOB:
