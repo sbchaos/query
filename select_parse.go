@@ -1,6 +1,22 @@
 package query
 
-import "io"
+import (
+	"io"
+)
+
+func (p *Parser) ParseStatements() ([]Statement, error) {
+	var stmts []Statement
+	for {
+		stmt, err := p.ParseStatement()
+		if err != nil {
+			if err == io.EOF {
+				return stmts, nil
+			}
+			return nil, err
+		}
+		stmts = append(stmts, stmt)
+	}
+}
 
 func (p *Parser) ParseStatement() (stmt Statement, err error) {
 	switch tok := p.peek(); tok {
@@ -24,6 +40,8 @@ func (p *Parser) ParseStatement() (stmt Statement, err error) {
 // parseStmt parses all statement types.
 func (p *Parser) parseNonExplainStatement() (Statement, error) {
 	switch p.peek() {
+	case SET:
+		return p.parseSetStatement()
 	case SELECT, VALUES:
 		return p.parseSelectStatement(false, nil)
 	case WITH:
@@ -800,6 +818,32 @@ func (p *Parser) parseWithStatement(inTrigger bool) (Statement, error) {
 	default:
 		return nil, p.errorExpected(p.pos, p.tok, "SELECT, VALUES, INSERT, REPLACE, UPDATE, or DELETE")
 	}
+}
+
+func (p *Parser) parseSetStatement() (Statement, error) {
+	assert(p.peek() == SET)
+	var set SetStatement
+
+	set.Set, _, _ = p.scan()
+	key := ""
+	for {
+		_, tok, val := p.scan()
+		if tok == IDENT {
+			key += val
+		} else if tok == DOT {
+			key += "."
+		}
+
+		if p.peek() == EQ {
+			break
+		}
+	}
+	set.Key = key
+	set.Equal, _, _ = p.scan()
+	_, _, val := p.scan()
+	set.Value = val
+
+	return &set, nil
 }
 
 func isTypeName(s string) bool {

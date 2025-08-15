@@ -820,6 +820,20 @@ func TestParser_ParseStatement(t *testing.T) {
 		AssertParseStatementError(t, `VALUES (1,`, `1:10: expected expression, found 'EOF'`)
 		AssertParseStatementError(t, `SELECT * UNION`, `1:14: expected SELECT or VALUES, found 'EOF'`)
 	})
+	t.Run("Set", func(t *testing.T) {
+		AssertParseStatement(t, `set odps.sql.submit.mode=script;`, &query.SetStatement{
+			Set:   pos(0),
+			Key:   "odps.sql.submit.mode",
+			Equal: pos(24),
+			Value: "script",
+		})
+		AssertParseStatement(t, `set odps.sql.groupby.orderby.position.alias=true;`, &query.SetStatement{
+			Set:   pos(0),
+			Key:   "odps.sql.groupby.orderby.position.alias",
+			Equal: pos(43),
+			Value: "true",
+		})
+	})
 }
 
 // AssertParseStatementError asserts s parses to a given error string.

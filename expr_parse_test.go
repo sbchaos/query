@@ -124,9 +124,9 @@ func TestParser_ParseExpr(t *testing.T) {
 			Column: &query.Ident{NamePos: pos(4), Name: "col"},
 		})
 		AssertParseExpr(t, `"tbl"."col"`, &query.QualifiedRef{
-			Table:  &query.Ident{NamePos: pos(0), Name: "tbl", Quoted: true},
+			Table:  &query.Ident{NamePos: pos(0), Name: "tbl", Quote: '"'},
 			Dot:    pos(5),
-			Column: &query.Ident{NamePos: pos(6), Name: "col", Quoted: true},
+			Column: &query.Ident{NamePos: pos(6), Name: "col", Quote: '"'},
 		})
 		AssertParseExprError(t, `tbl.`, `1:4: expected column name, found 'EOF'`)
 	})

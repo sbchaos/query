@@ -12,6 +12,7 @@ func (*QualifiedTableFunctionName) node() {}
 func (*SelectStatement) node()            {}
 func (*OnConstraint) node()               {}
 func (*UsingConstraint) node()            {}
+func (*SetStatement) node()               {}
 
 type Statement interface {
 	Node
@@ -975,4 +976,27 @@ func (d *WindowDefinition) String() string {
 	buf.WriteString(")")
 
 	return buf.String()
+}
+
+func (s *SetStatement) stmt() {}
+
+type SetStatement struct {
+	Set   Pos
+	Key   string
+	Equal Pos
+	Value string
+}
+
+func (s *SetStatement) Clone() *SetStatement {
+	if s == nil {
+		return nil
+	}
+	other := *s
+	other.Key = s.Key
+	other.Value = s.Value
+	return &other
+}
+
+func (s *SetStatement) String() string {
+	return fmt.Sprintf("SET %s=%s", s.Key, s.Value)
 }
