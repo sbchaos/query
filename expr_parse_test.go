@@ -390,6 +390,65 @@ func TestParser_ParseExpr(t *testing.T) {
 		AssertParseExprError(t, `sum(*`, `1:5: expected right paren, found 'EOF'`)
 		AssertParseExprError(t, `sum(foo foo`, `1:9: expected comma or right paren, found foo`)
 	})
+	t.Run("Case", func(t *testing.T) {
+		AssertParseExpr(t, `CASE 1 WHEN 2 THEN 3 WHEN 4 THEN 5 ELSE 6 END`, &query.CaseExpr{
+			Case:    pos(0),
+			Operand: &query.NumberLit{ValuePos: pos(5), Value: "1"},
+			Blocks: []*query.CaseBlock{
+				{
+					When:      pos(7),
+					Condition: &query.NumberLit{ValuePos: pos(12), Value: "2"},
+					Then:      pos(14),
+					Body:      &query.NumberLit{ValuePos: pos(19), Value: "3"},
+				},
+				{
+					When:      pos(21),
+					Condition: &query.NumberLit{ValuePos: pos(26), Value: "4"},
+					Then:      pos(28),
+					Body:      &query.NumberLit{ValuePos: pos(33), Value: "5"},
+				},
+			},
+			Else:     pos(35),
+			ElseExpr: &query.NumberLit{ValuePos: pos(40), Value: "6"},
+			End:      pos(42),
+		})
+		AssertParseExpr(t, `CASE WHEN 1 THEN 2 END`, &query.CaseExpr{
+			Case: pos(0),
+			Blocks: []*query.CaseBlock{
+				{
+					When:      pos(5),
+					Condition: &query.NumberLit{ValuePos: pos(10), Value: "1"},
+					Then:      pos(12),
+					Body:      &query.NumberLit{ValuePos: pos(17), Value: "2"},
+				},
+			},
+			End: pos(19),
+		})
+		AssertParseExpr(t, `CASE WHEN 1 IS NULL THEN 2 END`, &query.CaseExpr{
+			Case: pos(0),
+			Blocks: []*query.CaseBlock{
+				{
+					When: pos(5),
+					Condition: &query.Null{
+						X:     &query.NumberLit{ValuePos: pos(10), Value: "1"},
+						Op:    query.ISNULL,
+						OpPos: pos(12),
+					},
+					Then: pos(20),
+					Body: &query.NumberLit{ValuePos: pos(25), Value: "2"},
+				},
+			},
+			End: pos(27),
+		})
+		AssertParseExprError(t, `CASE`, `1:4: expected expression, found 'EOF'`)
+		AssertParseExprError(t, `CASE 1`, `1:6: expected WHEN, found 'EOF'`)
+		AssertParseExprError(t, `CASE WHEN`, `1:9: expected expression, found 'EOF'`)
+		AssertParseExprError(t, `CASE WHEN 1`, `1:11: expected THEN, found 'EOF'`)
+		AssertParseExprError(t, `CASE WHEN 1 THEN`, `1:16: expected expression, found 'EOF'`)
+		AssertParseExprError(t, `CASE WHEN 1 THEN 2`, `1:18: expected WHEN, ELSE or END, found 'EOF'`)
+		AssertParseExprError(t, `CASE WHEN 1 THEN 2 ELSE`, `1:23: expected expression, found 'EOF'`)
+		AssertParseExprError(t, `CASE WHEN 1 THEN 2 ELSE 3`, `1:25: expected END, found 'EOF'`)
+	})
 }
 
 // AssertParseExpr asserts the value of the first parse of s.

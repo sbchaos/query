@@ -17,6 +17,8 @@ type Expr interface {
 
 func (*BinaryExpr) node()   {}
 func (*Call) node()         {}
+func (*CaseBlock) node()    {}
+func (*CaseExpr) node()     {}
 func (*CastExpr) node()     {}
 func (*Null) node()         {}
 func (*ExprList) node()     {}
@@ -24,17 +26,20 @@ func (*Ident) node()        {}
 func (*ParenExpr) node()    {}
 func (*QualifiedRef) node() {}
 func (*UnaryExpr) node()    {}
+func (SelectExpr) node()    {}
 
 // Expression Types
 func (*BinaryExpr) expr()   {}
 func (*Call) expr()         {}
 func (*CastExpr) expr()     {}
+func (*CaseExpr) expr()     {}
 func (*Null) expr()         {}
 func (*ExprList) expr()     {}
 func (*Ident) expr()        {}
 func (*ParenExpr) expr()    {}
 func (*QualifiedRef) expr() {}
 func (*UnaryExpr) expr()    {}
+func (SelectExpr) expr()    {}
 
 // CloneExpr returns a deep copy expr.
 func CloneExpr(expr Expr) Expr {
@@ -50,6 +55,8 @@ func CloneExpr(expr Expr) Expr {
 	case *BoolLit:
 		return expr.Clone()
 	case *Call:
+		return expr.Clone()
+	case *CaseExpr:
 		return expr.Clone()
 	case *CastExpr:
 		return expr.Clone()
@@ -72,6 +79,8 @@ func CloneExpr(expr Expr) Expr {
 	case *TimestampLit:
 		return expr.Clone()
 	case *UnaryExpr:
+		return expr.Clone()
+	case SelectExpr:
 		return expr.Clone()
 	default:
 		panic(fmt.Sprintf("invalid expr type: %T", expr))
@@ -284,6 +293,81 @@ func (t *Type) String() string {
 	return t.Name.Name
 }
 
+type CaseExpr struct {
+	Case     Pos          // position of CASE keyword
+	Operand  Expr         // optional condition after the CASE keyword
+	Blocks   []*CaseBlock // list of WHEN/THEN pairs
+	Else     Pos          // position of ELSE keyword
+	ElseExpr Expr         // expression used by default case
+	End      Pos          // position of END keyword
+}
+
+// Clone returns a deep copy of expr.
+func (expr *CaseExpr) Clone() *CaseExpr {
+	if expr == nil {
+		return nil
+	}
+	other := *expr
+	other.Operand = CloneExpr(expr.Operand)
+	other.Blocks = cloneCaseBlocks(expr.Blocks)
+	other.ElseExpr = CloneExpr(expr.ElseExpr)
+	return &other
+}
+
+// String returns the string representation of the expression.
+func (expr *CaseExpr) String() string {
+	var buf bytes.Buffer
+	buf.WriteString("CASE")
+	if expr.Operand != nil {
+		buf.WriteString(" ")
+		buf.WriteString(expr.Operand.String())
+	}
+	for _, blk := range expr.Blocks {
+		buf.WriteString(" ")
+		buf.WriteString(blk.String())
+	}
+	if expr.ElseExpr != nil {
+		buf.WriteString(" ELSE ")
+		buf.WriteString(expr.ElseExpr.String())
+	}
+	buf.WriteString(" END")
+	return buf.String()
+}
+
+type CaseBlock struct {
+	When      Pos  // position of WHEN keyword
+	Condition Expr // block condition
+	Then      Pos  // position of THEN keyword
+	Body      Expr // result expression
+}
+
+// Clone returns a deep copy of blk.
+func (b *CaseBlock) Clone() *CaseBlock {
+	if b == nil {
+		return nil
+	}
+	other := *b
+	other.Condition = CloneExpr(b.Condition)
+	other.Body = CloneExpr(b.Body)
+	return &other
+}
+
+func cloneCaseBlocks(a []*CaseBlock) []*CaseBlock {
+	if a == nil {
+		return nil
+	}
+	other := make([]*CaseBlock, len(a))
+	for i := range a {
+		other[i] = a[i].Clone()
+	}
+	return other
+}
+
+// String returns the string representation of the block.
+func (b *CaseBlock) String() string {
+	return fmt.Sprintf("WHEN %s THEN %s", b.Condition.String(), b.Body.String())
+}
+
 type Null struct {
 	X     Expr  // expression being checked for null
 	Op    Token // IS or NOT token
@@ -475,4 +559,14 @@ func (expr *UnaryExpr) String() string {
 	default:
 		panic(fmt.Sprintf("query.UnaryExpr.String(): invalid op %s", expr.Op))
 	}
+}
+
+// SelectExpr represents a SELECT statement inside an expression.
+type SelectExpr struct {
+	*SelectStatement
+}
+
+// Clone returns a deep copy of expr.
+func (expr SelectExpr) Clone() SelectExpr {
+	return SelectExpr{expr.SelectStatement.Clone()}
 }

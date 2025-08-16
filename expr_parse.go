@@ -167,6 +167,9 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 	case tok == LP:
 		p.unscan()
 		return p.parseParenExpr()
+	case tok == CASE:
+		p.unscan()
+		return p.parseCaseExpr()
 	case tok == CAST:
 		p.unscan()
 		return p.parseCastExpr()
@@ -176,6 +179,10 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 			return nil, err
 		}
 		return &UnaryExpr{OpPos: pos, Op: tok, X: expr}, nil
+	case tok == SELECT:
+		p.unscan()
+		selectStmt, err := p.parseSelectStatement(false, nil)
+		return SelectExpr{selectStmt}, err
 	default:
 		return nil, p.errorExpected(p.pos, p.tok, "expression")
 	}
@@ -314,6 +321,65 @@ func (p *Parser) parseCall(name *Ident) (_ *Call, err error) {
 		return &expr, p.errorExpected(p.pos, p.tok, "right paren")
 	}
 	expr.Rparen, _, _ = p.scan()
+
+	return &expr, nil
+}
+
+func (p *Parser) parseCaseExpr() (_ *CaseExpr, err error) {
+	assert(p.peek() == CASE)
+
+	var expr CaseExpr
+	expr.Case, _, _ = p.scan()
+
+	// Parse optional expression if WHEN is not next.
+	if p.peek() != WHEN {
+		if expr.Operand, err = p.ParseExpr(); err != nil {
+			return &expr, err
+		}
+	}
+
+	// Parse one or more WHEN/THEN pairs.
+	for {
+		var blk CaseBlock
+		if p.peek() != WHEN {
+			return &expr, p.errorExpected(p.pos, p.tok, "WHEN")
+		}
+		blk.When, _, _ = p.scan()
+
+		if blk.Condition, err = p.ParseExpr(); err != nil {
+			return &expr, err
+		}
+
+		if p.peek() != THEN {
+			return &expr, p.errorExpected(p.pos, p.tok, "THEN")
+		}
+		blk.Then, _, _ = p.scan()
+
+		if blk.Body, err = p.ParseExpr(); err != nil {
+			return &expr, err
+		}
+
+		expr.Blocks = append(expr.Blocks, &blk)
+
+		if tok := p.peek(); tok == ELSE || tok == END {
+			break
+		} else if tok != WHEN {
+			return &expr, p.errorExpected(p.pos, p.tok, "WHEN, ELSE or END")
+		}
+	}
+
+	// Parse optional ELSE block.
+	if p.peek() == ELSE {
+		expr.Else, _, _ = p.scan()
+		if expr.ElseExpr, err = p.ParseExpr(); err != nil {
+			return &expr, err
+		}
+	}
+
+	if p.peek() != END {
+		return &expr, p.errorExpected(p.pos, p.tok, "END")
+	}
+	expr.End, _, _ = p.scan()
 
 	return &expr, nil
 }
