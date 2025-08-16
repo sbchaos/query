@@ -146,6 +146,9 @@ func TestScanner_Scan(t *testing.T) {
 	t.Run("LE", func(t *testing.T) {
 		AssertScan(t, "<=", query.LE, "<=")
 	})
+	t.Run("EQN", func(t *testing.T) {
+		AssertScan(t, "<=>", query.EQN, "<=>")
+	})
 	t.Run("LSHIFT", func(t *testing.T) {
 		AssertScan(t, "<<", query.LSHIFT, "<<")
 	})

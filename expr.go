@@ -149,6 +149,8 @@ func (expr *BinaryExpr) String() string {
 		return expr.X.String() + " < " + expr.Y.String()
 	case LE:
 		return expr.X.String() + " <= " + expr.Y.String()
+	case EQN:
+		return expr.X.String() + " <=> " + expr.Y.String()
 	case GT:
 		return expr.X.String() + " > " + expr.Y.String()
 	case GE:

@@ -69,6 +69,10 @@ func (s *Scanner) Scan() (pos Pos, token Token, lit string) {
 		case '<':
 			if s.peek() == '=' {
 				s.read()
+				if s.peek() == '>' {
+					s.read()
+					return pos, EQN, "<=>"
+				}
 				return pos, LE, "<="
 			} else if s.peek() == '<' {
 				s.read()

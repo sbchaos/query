@@ -59,6 +59,7 @@ const (
 	LT     // <
 	GT     // >
 	GE     // >=
+	EQN    // <=>
 	BITAND // &
 	BITOR  // |
 	BITNOT // ~
@@ -276,6 +277,7 @@ var tokens = [...]string{
 	LT:     "<",
 	GT:     ">",
 	GE:     ">=",
+	EQN:    "<=>",
 	BITAND: "&",
 	BITOR:  "|",
 	BITNOT: "~",
@@ -502,7 +504,7 @@ func (t Token) IsLiteral() bool {
 func (t Token) IsBinaryOp() bool {
 	switch t {
 	case PLUS, MINUS, STAR, SLASH, REM, CONCAT, NOT, BETWEEN,
-		LSHIFT, RSHIFT, BITAND, BITOR, LT, LE, GT, GE, EQ, NE,
+		LSHIFT, RSHIFT, BITAND, BITOR, LT, LE, GT, GE, EQ, NE, EQN,
 		IS, IN, LIKE, GLOB, MATCH, REGEXP, AND, OR,
 		JSON_EXTRACT_JSON, JSON_EXTRACT_SQL:
 		return true
@@ -549,7 +551,7 @@ func (t Token) Precedence() int {
 		return 3
 	case IS, MATCH, LIKE, GLOB, REGEXP, BETWEEN, IN, ISNULL, NOTNULL, NE, EQ:
 		return 4
-	case GT, LE, LT, GE:
+	case GT, LE, LT, GE, EQN:
 		return 5
 	case ESCAPE:
 		return 6

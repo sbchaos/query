@@ -37,6 +37,7 @@ func TestBinaryExpr_String(t *testing.T) {
 	AssertExprStringer(t, &query.BinaryExpr{Op: query.BITOR, X: &query.NumberLit{Value: "1"}, Y: &query.NumberLit{Value: "2"}}, `1 | 2`)
 	AssertExprStringer(t, &query.BinaryExpr{Op: query.LT, X: &query.NumberLit{Value: "1"}, Y: &query.NumberLit{Value: "2"}}, `1 < 2`)
 	AssertExprStringer(t, &query.BinaryExpr{Op: query.LE, X: &query.NumberLit{Value: "1"}, Y: &query.NumberLit{Value: "2"}}, `1 <= 2`)
+	AssertExprStringer(t, &query.BinaryExpr{Op: query.EQN, X: &query.NumberLit{Value: "1"}, Y: &query.NumberLit{Value: "2"}}, `1 <=> 2`)
 	AssertExprStringer(t, &query.BinaryExpr{Op: query.GT, X: &query.NumberLit{Value: "1"}, Y: &query.NumberLit{Value: "2"}}, `1 > 2`)
 	AssertExprStringer(t, &query.BinaryExpr{Op: query.GE, X: &query.NumberLit{Value: "1"}, Y: &query.NumberLit{Value: "2"}}, `1 >= 2`)
 	AssertExprStringer(t, &query.BinaryExpr{Op: query.EQ, X: &query.NumberLit{Value: "1"}, Y: &query.NumberLit{Value: "2"}}, `1 = 2`)
@@ -191,6 +192,11 @@ func TestParser_ParseExpr(t *testing.T) {
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.LE,
 			Y: &query.NumberLit{ValuePos: pos(5), Value: "2"},
+		})
+		AssertParseExpr(t, `1 <=> 2'`, &query.BinaryExpr{
+			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
+			OpPos: pos(2), Op: query.EQN,
+			Y: &query.NumberLit{ValuePos: pos(6), Value: "2"},
 		})
 		AssertParseExpr(t, `1 > 2'`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
