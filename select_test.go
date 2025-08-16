@@ -852,6 +852,50 @@ func TestParser_ParseStatement(t *testing.T) {
 			Value: "true",
 		})
 	})
+	t.Run("Variable", func(t *testing.T) {
+		AssertParseStatement(t, `@start_date Date;`, &query.DeclarationStatement{
+			Name: &query.Ident{Name: "@start_date", NamePos: pos(0)},
+			Type: &query.Ident{NamePos: pos(12), Name: "Date"},
+		})
+		AssertParseStatement(t, `@start_date := '{{ .DSTART | Date }}';`, &query.DeclarationStatement{
+			Name:  &query.Ident{Name: "@start_date", NamePos: pos(0)},
+			Value: &query.StringLit{ValuePos: pos(15), Value: "{{ .DSTART | Date }}"},
+		})
+		AssertParseStatement(t, `@modified_timestamp := CURRENT_TIMESTAMP();`, &query.DeclarationStatement{
+			Name: &query.Ident{Name: "@modified_timestamp", NamePos: pos(0)},
+			Value: &query.Call{
+				Name:   &query.Ident{NamePos: pos(23), Name: "CURRENT_TIMESTAMP"},
+				Lparen: pos(40),
+				Rparen: pos(41),
+			},
+		})
+		AssertParseStatement(t, `@tmp := SELECT data_date, shop_id FROM shop;`, &query.DeclarationStatement{
+			Name: &query.Ident{Name: "@tmp", NamePos: pos(0)},
+			Value: query.SelectExpr{
+				SelectStatement: &query.SelectStatement{
+					Select: pos(8),
+					Columns: []*query.ResultColumn{
+						{
+							Expr: &query.Ident{
+								NamePos: pos(15),
+								Name:    "data_date",
+							},
+						},
+						{
+							Expr: &query.Ident{
+								NamePos: pos(26),
+								Name:    "shop_id",
+							},
+						},
+					},
+					From: pos(34),
+					Source: &query.QualifiedTableName{
+						Name: &query.Ident{NamePos: pos(39), Name: "shop"},
+					},
+				},
+			},
+		})
+	})
 }
 
 // AssertParseStatementError asserts s parses to a given error string.

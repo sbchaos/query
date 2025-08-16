@@ -40,6 +40,8 @@ func (p *Parser) ParseStatement() (stmt Statement, err error) {
 // parseStmt parses all statement types.
 func (p *Parser) parseNonExplainStatement() (Statement, error) {
 	switch p.peek() {
+	case BIND:
+		return p.parseDeclarationStatement()
 	case SET:
 		return p.parseSetStatement()
 	case SELECT, VALUES:
@@ -818,6 +820,35 @@ func (p *Parser) parseWithStatement(inTrigger bool) (Statement, error) {
 	default:
 		return nil, p.errorExpected(p.pos, p.tok, "SELECT, VALUES, INSERT, REPLACE, UPDATE, or DELETE")
 	}
+}
+
+func (p *Parser) parseDeclarationStatement() (Statement, error) {
+	pos, _, val := p.scan()
+	n1 := &Ident{Name: val, NamePos: pos}
+	var t1 Expr
+	var v1 Expr
+
+	if p.peek() == BIND { // should be :
+		p.scan()
+		_, tok, _ := p.scan()
+		if tok != EQ {
+			return nil, p.errorExpected(p.pos, p.tok, ":= for bind")
+		}
+
+		expr, err := p.ParseExpr()
+		if err != nil {
+			return nil, err
+		}
+		v1 = expr
+	} else {
+		expr, err := p.ParseExpr()
+		if err != nil {
+			return nil, err
+		}
+		t1 = expr
+	}
+
+	return &DeclarationStatement{Name: n1, Type: t1, Value: v1}, nil
 }
 
 func (p *Parser) parseSetStatement() (Statement, error) {

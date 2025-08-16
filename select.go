@@ -13,13 +13,16 @@ func (*SelectStatement) node()            {}
 func (*OnConstraint) node()               {}
 func (*UsingConstraint) node()            {}
 func (*SetStatement) node()               {}
+func (*DeclarationStatement) node()       {}
 
 type Statement interface {
 	Node
 	stmt()
 }
 
-func (*SelectStatement) stmt() {}
+func (*SelectStatement) stmt()      {}
+func (*SetStatement) stmt()         {}
+func (*DeclarationStatement) stmt() {}
 
 // CloneStatement returns a deep copy stmt.
 func CloneStatement(stmt Statement) Statement {
@@ -978,8 +981,6 @@ func (d *WindowDefinition) String() string {
 	return buf.String()
 }
 
-func (s *SetStatement) stmt() {}
-
 type SetStatement struct {
 	Set   Pos
 	Key   string
@@ -999,4 +1000,28 @@ func (s *SetStatement) Clone() *SetStatement {
 
 func (s *SetStatement) String() string {
 	return fmt.Sprintf("SET %s=%s", s.Key, s.Value)
+}
+
+type DeclarationStatement struct {
+	Name  *Ident
+	Value Expr
+	Type  Expr
+}
+
+func (s *DeclarationStatement) Clone() *DeclarationStatement {
+	if s == nil {
+		return nil
+	}
+	other := *s
+	other.Name = s.Name.Clone()
+	other.Value = CloneExpr(s.Value)
+	other.Type = CloneExpr(s.Type)
+	return &other
+}
+
+func (s *DeclarationStatement) String() string {
+	if s.Value != nil {
+		return fmt.Sprintf("%s := %s", s.Name, s.Value.String())
+	}
+	return fmt.Sprintf("%s %s", s.Name, s.Type.String())
 }
