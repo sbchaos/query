@@ -781,6 +781,33 @@ func TestParser_ParseStatement(t *testing.T) {
 				Rparen: pos(33),
 			},
 		})
+		AssertParseStatement(t, `SELECT * FROM (WITH shop AS (SELECT * FROM business))`, &query.SelectStatement{
+			Select: pos(0),
+			Columns: []*query.ResultColumn{
+				{
+					Star: pos(7),
+				},
+			},
+			From: pos(9),
+			Source: &query.QualifiedTableFunctionName{
+				Name: &query.Ident{
+					NamePos: pos(14),
+					Name:    "generate_series",
+				},
+				Lparen: pos(29),
+				Args: []query.Expr{
+					&query.NumberLit{
+						ValuePos: pos(30),
+						Value:    "1",
+					},
+					&query.NumberLit{
+						ValuePos: pos(32),
+						Value:    "3",
+					},
+				},
+				Rparen: pos(33),
+			},
+		})
 
 		AssertParseStatementError(t, `WITH `, `1:5: expected table name, found 'EOF'`)
 		AssertParseStatementError(t, `WITH cte`, `1:8: expected AS, found 'EOF'`)

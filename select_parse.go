@@ -495,7 +495,13 @@ func (p *Parser) parseParenSource() (_ *ParenSource, err error) {
 	var source ParenSource
 	source.Lparen, _, _ = p.scan()
 
-	if p.peek() == SELECT {
+	if p.peek() == WITH {
+		sel, err := p.parseWithStatement(false)
+		if err != nil {
+			return &source, err
+		}
+		source.X = sel
+	} else if p.peek() == SELECT {
 		if source.X, err = p.parseSelectStatement(false, nil); err != nil {
 			return &source, err
 		}
@@ -808,7 +814,7 @@ func (p *Parser) parseWindowDefinition() (_ *WindowDefinition, err error) {
 
 // parseWithStatement is called only from parseNonExplainStatement as we don't
 // know what kind of statement we'll have after the CTEs (e.g. SELECT, INSERT, etc).
-func (p *Parser) parseWithStatement(inTrigger bool) (Statement, error) {
+func (p *Parser) parseWithStatement(inTrigger bool) (*SelectStatement, error) {
 	withClause, err := p.parseWithClause()
 	if err != nil {
 		return nil, err
