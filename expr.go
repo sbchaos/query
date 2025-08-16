@@ -16,6 +16,7 @@ type Expr interface {
 }
 
 func (*BinaryExpr) node()   {}
+func (*BindExpr) node()     {}
 func (*Call) node()         {}
 func (*CaseBlock) node()    {}
 func (*CaseExpr) node()     {}
@@ -30,6 +31,7 @@ func (SelectExpr) node()    {}
 
 // Expression Types
 func (*BinaryExpr) expr()   {}
+func (*BindExpr) expr()     {}
 func (*Call) expr()         {}
 func (*CastExpr) expr()     {}
 func (*CaseExpr) expr()     {}
@@ -190,6 +192,26 @@ func (expr *BinaryExpr) String() string {
 	default:
 		panic(fmt.Sprintf("query.BinaryExpr.String(): invalid op %s", expr.Op))
 	}
+}
+
+type BindExpr struct {
+	NamePos Pos    // name position
+	Name    string // binding name
+}
+
+// Clone returns a deep copy of expr.
+func (expr *BindExpr) Clone() *BindExpr {
+	if expr == nil {
+		return nil
+	}
+	other := *expr
+	return &other
+}
+
+// String returns the string representation of the expression.
+func (expr *BindExpr) String() string {
+	// TODO(BBJ): Support all bind characters.
+	return expr.Name
 }
 
 type Call struct {
