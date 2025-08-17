@@ -46,6 +46,7 @@ const (
 	TRUE    // true
 	FALSE   // false
 	BIND    //? or ?NNN or :VVV or @VVV or $VVV
+	TMPL    // {{ Content }}
 	literal_end
 
 	operator_beg

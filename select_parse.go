@@ -125,6 +125,9 @@ func (p *Parser) parseSelectStatement(compounded bool, withClause *WithClause) (
 				break
 			}
 			p.scan()
+			if p.peek() == FROM {
+				break
+			}
 		}
 
 		// Parse FROM clause.

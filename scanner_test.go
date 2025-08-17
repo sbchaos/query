@@ -129,6 +129,10 @@ func TestScanner_Scan(t *testing.T) {
 	t.Run("RP", func(t *testing.T) {
 		AssertScan(t, ")", query.RP, ")")
 	})
+	t.Run("TMPL", func(t *testing.T) {
+		AssertScan(t, "{{ .TABLE_NAME }} ", query.TMPL, " .TABLE_NAME ")
+		AssertScan(t, "{{ .Table }", query.ILLEGAL, "{{ .Table }")
+	})
 	t.Run("COMMA", func(t *testing.T) {
 		AssertScan(t, ",", query.COMMA, ",")
 	})

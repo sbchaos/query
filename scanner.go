@@ -60,6 +60,11 @@ func (s *Scanner) Scan() (pos Pos, token Token, lit string) {
 				return pos, NE, "!="
 			}
 			return pos, ILLEGAL, "!"
+		case '{':
+			if s.peek() == '{' {
+				return s.scanTemplate()
+			}
+			return pos, ILLEGAL, "{"
 		case '=':
 			if s.peek() == '=' {
 				s.read()
@@ -145,6 +150,27 @@ func (s *Scanner) scanUnquotedIdent(pos Pos, prefix string) (Pos, Token, string)
 	lit := s.buf.String()
 	tok := Lookup(lit)
 	return pos, tok, lit
+}
+
+func (s *Scanner) scanTemplate() (Pos, Token, string) {
+	pos := s.pos
+	s.read()
+	endCh := '}'
+	tok := TMPL
+
+	s.buf.Reset()
+	for {
+		ch, _ := s.read()
+		if ch == -1 {
+			return pos, ILLEGAL, "{{" + s.buf.String()
+		} else if ch == endCh {
+			if s.peek() == endCh { // end of template "}}"
+				s.read()
+				return pos, tok, s.buf.String()
+			}
+		}
+		s.buf.WriteRune(ch)
+	}
 }
 
 func (s *Scanner) scanQuotedIdent() (Pos, Token, string) {

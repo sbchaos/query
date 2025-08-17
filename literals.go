@@ -6,6 +6,7 @@ func (*NullLit) node()      {}
 func (*NumberLit) node()    {}
 func (*StringLit) node()    {}
 func (*TimestampLit) node() {}
+func (*TemplateStr) node()  {}
 
 // Literal expression
 func (*BlobLit) expr()      {}
@@ -14,6 +15,7 @@ func (*NullLit) expr()      {}
 func (*NumberLit) expr()    {}
 func (*StringLit) expr()    {}
 func (*TimestampLit) expr() {}
+func (*TemplateStr) expr()  {}
 
 type BlobLit struct {
 	ValuePos Pos    // literal position
@@ -133,4 +135,21 @@ func (lit *TimestampLit) Clone() *TimestampLit {
 // String returns the string representation of the expression.
 func (lit *TimestampLit) String() string {
 	return lit.Value
+}
+
+type TemplateStr struct {
+	TmplPos  Pos
+	Template string
+}
+
+func (lit *TemplateStr) Clone() *TemplateStr {
+	if lit == nil {
+		return nil
+	}
+	other := *lit
+	return &other
+}
+
+func (lit *TemplateStr) String() string {
+	return "{{" + lit.Template + "}}"
 }

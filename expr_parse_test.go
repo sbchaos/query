@@ -133,92 +133,92 @@ func TestParser_ParseExpr(t *testing.T) {
 	})
 
 	t.Run("BinaryExpr", func(t *testing.T) {
-		AssertParseExpr(t, `1 + 2'`, &query.BinaryExpr{
+		AssertParseExpr(t, `1 + 2`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.PLUS,
 			Y: &query.NumberLit{ValuePos: pos(4), Value: "2"},
 		})
-		AssertParseExpr(t, `1 - 2'`, &query.BinaryExpr{
+		AssertParseExpr(t, `1 - 2`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.MINUS,
 			Y: &query.NumberLit{ValuePos: pos(4), Value: "2"},
 		})
-		AssertParseExpr(t, `1 * 2'`, &query.BinaryExpr{
+		AssertParseExpr(t, `1 * 2`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.STAR,
 			Y: &query.NumberLit{ValuePos: pos(4), Value: "2"},
 		})
-		AssertParseExpr(t, `1 / 2'`, &query.BinaryExpr{
+		AssertParseExpr(t, `1 / 2`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.SLASH,
 			Y: &query.NumberLit{ValuePos: pos(4), Value: "2"},
 		})
-		AssertParseExpr(t, `1 % 2'`, &query.BinaryExpr{
+		AssertParseExpr(t, `1 % 2`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.REM,
 			Y: &query.NumberLit{ValuePos: pos(4), Value: "2"},
 		})
-		AssertParseExpr(t, `1 || 2'`, &query.BinaryExpr{
+		AssertParseExpr(t, `1 || 2`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.CONCAT,
 			Y: &query.NumberLit{ValuePos: pos(5), Value: "2"},
 		})
-		AssertParseExpr(t, `1 << 2'`, &query.BinaryExpr{
+		AssertParseExpr(t, `1 << 2`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.LSHIFT,
 			Y: &query.NumberLit{ValuePos: pos(5), Value: "2"},
 		})
-		AssertParseExpr(t, `1 >> 2'`, &query.BinaryExpr{
+		AssertParseExpr(t, `1 >> 2`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.RSHIFT,
 			Y: &query.NumberLit{ValuePos: pos(5), Value: "2"},
 		})
-		AssertParseExpr(t, `1 & 2'`, &query.BinaryExpr{
+		AssertParseExpr(t, `1 & 2`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.BITAND,
 			Y: &query.NumberLit{ValuePos: pos(4), Value: "2"},
 		})
-		AssertParseExpr(t, `1 | 2'`, &query.BinaryExpr{
+		AssertParseExpr(t, `1 | 2`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.BITOR,
 			Y: &query.NumberLit{ValuePos: pos(4), Value: "2"},
 		})
-		AssertParseExpr(t, `1 < 2'`, &query.BinaryExpr{
+		AssertParseExpr(t, `1 < 2`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.LT,
 			Y: &query.NumberLit{ValuePos: pos(4), Value: "2"},
 		})
-		AssertParseExpr(t, `1 <= 2'`, &query.BinaryExpr{
+		AssertParseExpr(t, `1 <= 2`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.LE,
 			Y: &query.NumberLit{ValuePos: pos(5), Value: "2"},
 		})
-		AssertParseExpr(t, `1 <=> 2'`, &query.BinaryExpr{
+		AssertParseExpr(t, `1 <=> 2`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.EQN,
 			Y: &query.NumberLit{ValuePos: pos(6), Value: "2"},
 		})
-		AssertParseExpr(t, `1 > 2'`, &query.BinaryExpr{
+		AssertParseExpr(t, `1 > 2`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.GT,
 			Y: &query.NumberLit{ValuePos: pos(4), Value: "2"},
 		})
-		AssertParseExpr(t, `1 >= 2'`, &query.BinaryExpr{
+		AssertParseExpr(t, `1 >= 2`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.GE,
 			Y: &query.NumberLit{ValuePos: pos(5), Value: "2"},
 		})
-		AssertParseExpr(t, `1 = 2'`, &query.BinaryExpr{
+		AssertParseExpr(t, `1 = 2`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.EQ,
 			Y: &query.NumberLit{ValuePos: pos(4), Value: "2"},
 		})
-		AssertParseExpr(t, `1 != 2'`, &query.BinaryExpr{
+		AssertParseExpr(t, `1 != 2`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.NE,
 			Y: &query.NumberLit{ValuePos: pos(5), Value: "2"},
 		})
-		AssertParseExpr(t, `(1 + 2)'`, &query.ParenExpr{
+		AssertParseExpr(t, `(1 + 2)`, &query.ParenExpr{
 			Lparen: pos(0),
 			X: &query.BinaryExpr{
 				X:     &query.NumberLit{ValuePos: pos(1), Value: "1"},
@@ -226,6 +226,11 @@ func TestParser_ParseExpr(t *testing.T) {
 				Y: &query.NumberLit{ValuePos: pos(5), Value: "2"},
 			},
 			Rparen: pos(6),
+		})
+		AssertParseExpr(t, `{{ .Count }} != 2`, &query.BinaryExpr{
+			X:     &query.TemplateStr{TmplPos: pos(1), Template: " .Count "},
+			OpPos: pos(13), Op: query.NE,
+			Y: &query.NumberLit{ValuePos: pos(16), Value: "2"},
 		})
 		AssertParseExprError(t, `(`, `1:1: expected expression, found 'EOF'`)
 		AssertParseExpr(t, `1 IS 2'`, &query.BinaryExpr{

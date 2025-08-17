@@ -150,6 +150,8 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 		return ident, nil
 	case tok == STRING:
 		return &StringLit{ValuePos: pos, Value: lit}, nil
+	case tok == TMPL:
+		return &TemplateStr{TmplPos: pos, Template: lit}, nil
 	case tok == BLOB:
 		return &BlobLit{ValuePos: pos, Value: lit}, nil
 	case tok == FLOAT, tok == INTEGER:
