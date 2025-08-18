@@ -1021,6 +1021,9 @@ func (s *DeclarationStatement) Clone() *DeclarationStatement {
 
 func (s *DeclarationStatement) String() string {
 	if s.Value != nil {
+		if s.Type != nil {
+			return fmt.Sprintf("%s := %s %s", s.Name, s.Type.String(), s.Value.String())
+		}
 		return fmt.Sprintf("%s := %s", s.Name, s.Value.String())
 	}
 	return fmt.Sprintf("%s %s", s.Name, s.Type.String())

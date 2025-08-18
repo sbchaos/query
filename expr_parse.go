@@ -178,6 +178,10 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 			return nil, err
 		}
 		return &UnaryExpr{OpPos: pos, Op: tok, X: expr}, nil
+	case tok == WITH:
+		p.unscan()
+		selectStmt, err := p.parseWithStatement(false)
+		return SelectExpr{selectStmt}, err
 	case tok == SELECT:
 		p.unscan()
 		selectStmt, err := p.parseSelectStatement(false, nil)

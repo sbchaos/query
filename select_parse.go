@@ -848,7 +848,17 @@ func (p *Parser) parseDeclarationStatement() (Statement, error) {
 		if err != nil {
 			return nil, err
 		}
-		v1 = expr
+
+		if p.peek() != SEMI {
+			expr2, err := p.ParseExpr()
+			if err != nil {
+				return nil, err
+			}
+			t1 = expr
+			v1 = expr2
+		} else {
+			v1 = expr
+		}
 	} else {
 		expr, err := p.ParseExpr()
 		if err != nil {

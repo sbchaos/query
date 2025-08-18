@@ -895,6 +895,11 @@ func TestParser_ParseStatement(t *testing.T) {
 			Name:  &query.Ident{Name: "@start_date", NamePos: pos(0)},
 			Value: &query.StringLit{ValuePos: pos(15), Value: "{{ .DSTART | Date }}"},
 		})
+		AssertParseStatement(t, `@start_date := DATE '{{ .DSTART | Date }}';`, &query.DeclarationStatement{
+			Name:  &query.Ident{Name: "@start_date", NamePos: pos(0)},
+			Type:  &query.Ident{Name: "DATE", NamePos: pos(15)},
+			Value: &query.StringLit{ValuePos: pos(20), Value: "{{ .DSTART | Date }}"},
+		})
 		AssertParseStatement(t, `@modified_timestamp := CURRENT_TIMESTAMP();`, &query.DeclarationStatement{
 			Name: &query.Ident{Name: "@modified_timestamp", NamePos: pos(0)},
 			Value: &query.Call{
