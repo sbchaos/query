@@ -142,12 +142,7 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 	switch {
 	case isExprIdentToken(tok):
 		ident := &Ident{Name: lit, NamePos: pos, Quote: quoteRune(tok)}
-		if p.peek() == DOT {
-			return p.parseQualifiedRef(ident)
-		} else if p.peek() == LP {
-			return p.parseCall(ident)
-		}
-		return ident, nil
+		return p.parseIdentifier(ident)
 	case tok == STRING:
 		return &StringLit{ValuePos: pos, Value: lit}, nil
 	case tok == TMPL:
@@ -190,6 +185,67 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 	default:
 		return nil, p.errorExpected(p.pos, p.tok, "expression")
 	}
+}
+
+func (p *Parser) parseMultiIdent(ident *Ident) (*MultiPartIdent, Pos) {
+	emptyPos := Pos{}
+	if p.peek() != DOT {
+		return &MultiPartIdent{
+			Name: ident,
+		}, emptyPos
+	}
+	dot1, _, _ := p.scan()
+	if !isIdentToken(p.peek()) {
+		return &MultiPartIdent{Name: ident}, dot1
+	}
+	// Next ident
+	pos, tok, lit := p.scan()
+	ident2 := &Ident{Name: lit, NamePos: pos, Quote: quoteRune(tok)}
+
+	if p.peek() != DOT {
+		return &MultiPartIdent{First: ident, Dot1: dot1, Name: ident2}, emptyPos
+	}
+
+	dot2, _, _ := p.scan()
+	if !isIdentToken(p.peek()) {
+		return &MultiPartIdent{First: ident, Dot1: dot1, Name: ident2}, dot2
+	}
+
+	// Next ident
+	pos2, tok2, lit2 := p.scan()
+	ident3 := &Ident{Name: lit2, NamePos: pos2, Quote: quoteRune(tok2)}
+
+	return &MultiPartIdent{
+		First:  ident,
+		Dot1:   dot1,
+		Second: ident2,
+		Dot2:   dot2,
+		Name:   ident3,
+	}, emptyPos
+}
+
+func (p *Parser) parseIdentifier(ident *Ident) (Expr, error) {
+	mIdent, dotPos := p.parseMultiIdent(ident)
+
+	if p.peek() == DOT {
+		if dotPos.IsValid() {
+			return mIdent, &Error{Pos: p.pos, Msg: "Found .. in input string"}
+		} else {
+			dotPos, _, _ = p.scan()
+		}
+	}
+
+	if dotPos.IsValid() {
+		var star Pos
+		if p.peek() == STAR {
+			star, _, _ = p.scan()
+			return &QualifiedRef{Name: mIdent, Dot: dotPos, Star: star}, nil
+		}
+		return nil, p.errorExpected(p.pos, p.tok, "identifier")
+	} else if p.peek() == LP {
+		return p.parseCall(mIdent)
+	}
+	return mIdent, nil
 }
 
 func (p *Parser) parseBinaryExpr(prec1 int) (expr Expr, err error) {
@@ -272,26 +328,7 @@ func (p *Parser) parseExprList() (_ *ExprList, err error) {
 	return &list, nil
 }
 
-func (p *Parser) parseQualifiedRef(table *Ident) (_ *QualifiedRef, err error) {
-	assert(p.peek() == DOT)
-
-	var expr QualifiedRef
-	expr.Table = table
-	expr.Dot, _, _ = p.scan()
-
-	if p.peek() == STAR {
-		expr.Star, _, _ = p.scan()
-	} else if isIdentToken(p.peek()) {
-		pos, tok, lit := p.scan()
-		expr.Column = &Ident{Name: lit, NamePos: pos, Quote: quoteRune(tok)}
-	} else {
-		return &expr, p.errorExpected(p.pos, p.tok, "column name")
-	}
-
-	return &expr, nil
-}
-
-func (p *Parser) parseCall(name *Ident) (_ *Call, err error) {
+func (p *Parser) parseCall(name *MultiPartIdent) (_ *Call, err error) {
 	assert(p.peek() == LP)
 
 	var expr Call

@@ -434,7 +434,9 @@ func TestParser_ParseStatement(t *testing.T) {
 						Select: &query.SelectStatement{
 							Select: pos(24),
 							Columns: []*query.ResultColumn{
-								{Expr: &query.Ident{NamePos: pos(31), Name: "baz"}},
+								{Expr: &query.MultiPartIdent{
+									Name: &query.Ident{NamePos: pos(31), Name: "baz"}},
+								},
 							},
 						},
 						SelectRparen: pos(34),
@@ -446,7 +448,7 @@ func TestParser_ParseStatement(t *testing.T) {
 						Select: &query.SelectStatement{
 							Select: pos(45),
 							Columns: []*query.ResultColumn{
-								{Expr: &query.Ident{NamePos: pos(52), Name: "yyy"}},
+								{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(52), Name: "yyy"}}},
 							},
 						},
 						SelectRparen: pos(55),
@@ -455,7 +457,7 @@ func TestParser_ParseStatement(t *testing.T) {
 			},
 			Select: pos(57),
 			Columns: []*query.ResultColumn{
-				{Expr: &query.Ident{NamePos: pos(64), Name: "bat"}},
+				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(64), Name: "bat"}}},
 			},
 		})
 		AssertParseStatement(t, `WITH RECURSIVE cte AS (SELECT foo) SELECT bar`, &query.SelectStatement{
@@ -470,7 +472,7 @@ func TestParser_ParseStatement(t *testing.T) {
 						Select: &query.SelectStatement{
 							Select: pos(23),
 							Columns: []*query.ResultColumn{
-								{Expr: &query.Ident{NamePos: pos(30), Name: "foo"}},
+								{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(30), Name: "foo"}}},
 							},
 						},
 						SelectRparen: pos(33),
@@ -479,7 +481,7 @@ func TestParser_ParseStatement(t *testing.T) {
 			},
 			Select: pos(35),
 			Columns: []*query.ResultColumn{
-				{Expr: &query.Ident{NamePos: pos(42), Name: "bar"}},
+				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(42), Name: "bar"}}},
 			},
 		})
 
@@ -508,8 +510,8 @@ func TestParser_ParseStatement(t *testing.T) {
 			Group:   pos(9),
 			GroupBy: pos(15),
 			GroupByExprs: []query.Expr{
-				&query.Ident{NamePos: pos(18), Name: "foo"},
-				&query.Ident{NamePos: pos(23), Name: "bar"},
+				&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(18), Name: "foo"}},
+				&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(23), Name: "bar"}},
 			},
 		})
 		AssertParseStatement(t, `SELECT * GROUP BY foo HAVING true`, &query.SelectStatement{
@@ -518,7 +520,7 @@ func TestParser_ParseStatement(t *testing.T) {
 			Group:   pos(9),
 			GroupBy: pos(15),
 			GroupByExprs: []query.Expr{
-				&query.Ident{NamePos: pos(18), Name: "foo"},
+				&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(18), Name: "foo"}},
 			},
 			Having:     pos(22),
 			HavingExpr: &query.BoolLit{ValuePos: pos(29), Value: true},
@@ -555,8 +557,8 @@ func TestParser_ParseStatement(t *testing.T) {
 			Order:   pos(9),
 			OrderBy: pos(15),
 			OrderingTerms: []*query.OrderingTerm{
-				{X: &query.Ident{NamePos: pos(18), Name: "foo"}, Asc: pos(22)},
-				{X: &query.Ident{NamePos: pos(27), Name: "bar"}, Desc: pos(31)},
+				{X: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(18), Name: "foo"}}, Asc: pos(22)},
+				{X: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(27), Name: "bar"}}, Desc: pos(31)},
 			},
 		})
 
@@ -591,8 +593,8 @@ func TestParser_ParseStatement(t *testing.T) {
 		AssertParseStatement(t, `SELECT shop_uuid, price_range FROM merchant_price WHERE sale_date = '{{ .DSTART | Date }}'`, &query.SelectStatement{
 			Select: pos(0),
 			Columns: []*query.ResultColumn{
-				{Expr: &query.Ident{NamePos: pos(7), Name: "shop_uuid"}},
-				{Expr: &query.Ident{NamePos: pos(18), Name: "price_range"}},
+				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(7), Name: "shop_uuid"}}},
+				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(18), Name: "price_range"}}},
 			},
 			From: pos(30),
 			Source: &query.QualifiedTableName{
@@ -600,7 +602,7 @@ func TestParser_ParseStatement(t *testing.T) {
 			},
 			Where: pos(50),
 			WhereExpr: &query.BinaryExpr{
-				X:     &query.Ident{NamePos: pos(56), Name: "sale_date"},
+				X:     &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(56), Name: "sale_date"}},
 				OpPos: pos(66),
 				Op:    query.EQ,
 				Y:     &query.StringLit{ValuePos: pos(68), Value: "{{ .DSTART | Date }}"},
@@ -609,9 +611,9 @@ func TestParser_ParseStatement(t *testing.T) {
 		AssertParseStatement(t, `SELECT a, b, c, FROM price`, &query.SelectStatement{
 			Select: pos(0),
 			Columns: []*query.ResultColumn{
-				{Expr: &query.Ident{NamePos: pos(7), Name: "a"}},
-				{Expr: &query.Ident{NamePos: pos(10), Name: "b"}},
-				{Expr: &query.Ident{NamePos: pos(13), Name: "c"}},
+				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(7), Name: "a"}}},
+				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(10), Name: "b"}}},
+				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(13), Name: "c"}}},
 			},
 			From: pos(16),
 			Source: &query.QualifiedTableName{
@@ -634,7 +636,7 @@ func TestParser_ParseStatement(t *testing.T) {
 			Order:   pos(24),
 			OrderBy: pos(30),
 			OrderingTerms: []*query.OrderingTerm{
-				{X: &query.Ident{NamePos: pos(33), Name: "foo"}},
+				{X: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(33), Name: "foo"}}},
 			},
 		})
 		AssertParseStatement(t, `SELECT * UNION ALL SELECT *`, &query.SelectStatement{
@@ -704,10 +706,8 @@ func TestParser_ParseStatement(t *testing.T) {
 			Select: pos(0),
 			Columns: []*query.ResultColumn{
 				{
-					Expr: &query.Ident{
-						NamePos: pos(7),
-						Name:    "rowid",
-					},
+					Expr: &query.MultiPartIdent{
+						Name: &query.Ident{NamePos: pos(7), Name: "rowid"}},
 				},
 			},
 			From: pos(13),
@@ -723,10 +723,8 @@ func TestParser_ParseStatement(t *testing.T) {
 			Select: pos(0),
 			Columns: []*query.ResultColumn{
 				{
-					Expr: &query.Ident{
-						NamePos: pos(7),
-						Name:    "rowid",
-					},
+					Expr: &query.MultiPartIdent{
+						Name: &query.Ident{NamePos: pos(7), Name: "rowid"}},
 				},
 			},
 			From: pos(13),
@@ -740,10 +738,8 @@ func TestParser_ParseStatement(t *testing.T) {
 			OrderBy: pos(28),
 			OrderingTerms: []*query.OrderingTerm{
 				{
-					X: &query.Ident{
-						NamePos: pos(31),
-						Name:    "rowid",
-					},
+					X: &query.MultiPartIdent{
+						Name: &query.Ident{NamePos: pos(31), Name: "rowid"}},
 				},
 			},
 		})
@@ -752,10 +748,8 @@ func TestParser_ParseStatement(t *testing.T) {
 			Select: pos(0),
 			Columns: []*query.ResultColumn{
 				{
-					Expr: &query.Ident{
-						NamePos: pos(7),
-						Name:    "CURRENT_TIMESTAMP",
-					},
+					Expr: &query.MultiPartIdent{
+						Name: &query.Ident{NamePos: pos(7), Name: "CURRENT_TIMESTAMP"}},
 				},
 			},
 			From: pos(25),
@@ -895,7 +889,7 @@ func TestParser_ParseStatement(t *testing.T) {
 	t.Run("Variable", func(t *testing.T) {
 		AssertParseStatement(t, `@start_date Date;`, &query.DeclarationStatement{
 			Name: &query.Ident{Name: "@start_date", NamePos: pos(0)},
-			Type: &query.Ident{NamePos: pos(12), Name: "Date"},
+			Type: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(12), Name: "Date"}},
 		})
 		AssertParseStatement(t, `@start_date := '{{ .DSTART | Date }}';`, &query.DeclarationStatement{
 			Name:  &query.Ident{Name: "@start_date", NamePos: pos(0)},
@@ -904,7 +898,7 @@ func TestParser_ParseStatement(t *testing.T) {
 		AssertParseStatement(t, `@modified_timestamp := CURRENT_TIMESTAMP();`, &query.DeclarationStatement{
 			Name: &query.Ident{Name: "@modified_timestamp", NamePos: pos(0)},
 			Value: &query.Call{
-				Name:   &query.Ident{NamePos: pos(23), Name: "CURRENT_TIMESTAMP"},
+				Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(23), Name: "CURRENT_TIMESTAMP"}},
 				Lparen: pos(40),
 				Rparen: pos(41),
 			},
@@ -916,15 +910,19 @@ func TestParser_ParseStatement(t *testing.T) {
 					Select: pos(8),
 					Columns: []*query.ResultColumn{
 						{
-							Expr: &query.Ident{
-								NamePos: pos(15),
-								Name:    "data_date",
+							Expr: &query.MultiPartIdent{
+								Name: &query.Ident{
+									NamePos: pos(15),
+									Name:    "data_date",
+								},
 							},
 						},
 						{
-							Expr: &query.Ident{
-								NamePos: pos(26),
-								Name:    "shop_id",
+							Expr: &query.MultiPartIdent{
+								Name: &query.Ident{
+									NamePos: pos(26),
+									Name:    "shop_id",
+								},
 							},
 						},
 					},

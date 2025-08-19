@@ -15,33 +15,35 @@ type Expr interface {
 	expr()
 }
 
-func (*BinaryExpr) node()   {}
-func (*BindExpr) node()     {}
-func (*Call) node()         {}
-func (*CaseBlock) node()    {}
-func (*CaseExpr) node()     {}
-func (*CastExpr) node()     {}
-func (*Null) node()         {}
-func (*ExprList) node()     {}
-func (*Ident) node()        {}
-func (*ParenExpr) node()    {}
-func (*QualifiedRef) node() {}
-func (*UnaryExpr) node()    {}
-func (SelectExpr) node()    {}
+func (*BinaryExpr) node()     {}
+func (*BindExpr) node()       {}
+func (*Call) node()           {}
+func (*CaseBlock) node()      {}
+func (*CaseExpr) node()       {}
+func (*CastExpr) node()       {}
+func (*Null) node()           {}
+func (*ExprList) node()       {}
+func (*Ident) node()          {}
+func (*MultiPartIdent) node() {}
+func (*ParenExpr) node()      {}
+func (*QualifiedRef) node()   {}
+func (*UnaryExpr) node()      {}
+func (SelectExpr) node()      {}
 
 // Expression Types
-func (*BinaryExpr) expr()   {}
-func (*BindExpr) expr()     {}
-func (*Call) expr()         {}
-func (*CastExpr) expr()     {}
-func (*CaseExpr) expr()     {}
-func (*Null) expr()         {}
-func (*ExprList) expr()     {}
-func (*Ident) expr()        {}
-func (*ParenExpr) expr()    {}
-func (*QualifiedRef) expr() {}
-func (*UnaryExpr) expr()    {}
-func (SelectExpr) expr()    {}
+func (*BinaryExpr) expr()     {}
+func (*BindExpr) expr()       {}
+func (*Call) expr()           {}
+func (*CastExpr) expr()       {}
+func (*CaseExpr) expr()       {}
+func (*Null) expr()           {}
+func (*ExprList) expr()       {}
+func (*Ident) expr()          {}
+func (*MultiPartIdent) expr() {}
+func (*ParenExpr) expr()      {}
+func (*QualifiedRef) expr()   {}
+func (*UnaryExpr) expr()      {}
+func (SelectExpr) expr()      {}
 
 // CloneExpr returns a deep copy expr.
 func CloneExpr(expr Expr) Expr {
@@ -67,6 +69,8 @@ func CloneExpr(expr Expr) Expr {
 	case *ExprList:
 		return expr.Clone()
 	case *Ident:
+		return expr.Clone()
+	case *MultiPartIdent:
 		return expr.Clone()
 	case *NullLit:
 		return expr.Clone()
@@ -217,12 +221,12 @@ func (expr *BindExpr) String() string {
 }
 
 type Call struct {
-	Name     *Ident // function name
-	Lparen   Pos    // position of left paren
-	Star     Pos    // position of *
-	Distinct Pos    // position of DISTINCT keyword
-	Args     []Expr // argument list
-	Rparen   Pos    // position of right paren
+	Name     *MultiPartIdent // function name
+	Lparen   Pos             // position of left paren
+	Star     Pos             // position of *
+	Distinct Pos             // position of DISTINCT keyword
+	Args     []Expr          // argument list
+	Rparen   Pos             // position of right paren
 }
 
 // Clone returns a deep copy of c.
@@ -239,7 +243,7 @@ func (c *Call) Clone() *Call {
 // String returns the string representation of the expression.
 func (c *Call) String() string {
 	var buf bytes.Buffer
-	buf.WriteString(c.Name.Name)
+	buf.WriteString(c.Name.String())
 	buf.WriteString("(")
 	if c.Star.IsValid() {
 		buf.WriteString("*")
@@ -463,6 +467,40 @@ func (l *ExprList) String() string {
 	return buf.String()
 }
 
+type MultiPartIdent struct {
+	First  *Ident // first part eg project
+	Dot1   Pos    // dot after first segment
+	Second *Ident // Second Segment (Optional)
+	Dot2   Pos    // position of dot after 2nd
+	Name   *Ident // table name
+}
+
+func (m *MultiPartIdent) Clone() *MultiPartIdent {
+	if m == nil {
+		return nil
+	}
+	other := *m
+	other.First = m.First.Clone()
+	other.Second = m.Second.Clone()
+	other.Name = m.Name.Clone()
+	return &other
+}
+
+// String returns the string representation of the expression.
+func (m *MultiPartIdent) String() string {
+	var buf bytes.Buffer
+	if m.First != nil {
+		buf.WriteString(m.First.String())
+		buf.WriteString(".")
+	}
+	if m.Second != nil {
+		buf.WriteString(m.Second.String())
+		buf.WriteString(".")
+	}
+	buf.WriteString(m.Name.String())
+	return buf.String()
+}
+
 type Ident struct {
 	NamePos Pos    // identifier position
 	Name    string // identifier name
@@ -528,10 +566,9 @@ func (expr *ParenExpr) String() string {
 }
 
 type QualifiedRef struct {
-	Table  *Ident // table name
-	Dot    Pos    // position of dot
-	Star   Pos    // position of * (result column only)
-	Column *Ident // column name
+	Name *MultiPartIdent // table name
+	Dot  Pos             // position of dot for *
+	Star Pos             // position of * (result column only)
 }
 
 // Clone returns a deep copy of r.
@@ -540,17 +577,16 @@ func (r *QualifiedRef) Clone() *QualifiedRef {
 		return nil
 	}
 	other := *r
-	other.Table = r.Table.Clone()
-	other.Column = r.Column.Clone()
+	other.Name = r.Name.Clone()
 	return &other
 }
 
 // String returns the string representation of the expression.
 func (r *QualifiedRef) String() string {
 	if r.Star.IsValid() {
-		return fmt.Sprintf("%s.*", r.Table.String())
+		return fmt.Sprintf("%s.*", r.Name.String())
 	}
-	return r.Table.String() + "." + r.Column.String()
+	return r.Name.String()
 }
 
 type UnaryExpr struct {
