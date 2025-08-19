@@ -57,6 +57,7 @@ type SelectStatement struct {
 
 	Group        Pos    // position of GROUP keyword
 	GroupBy      Pos    // position of BY keyword after GROUP
+	GroupByAll   Pos    // positon of ALL keyword after GROUP BY
 	GroupByExprs []Expr // group by expression list
 	Having       Pos    // position of HAVING keyword
 	HavingExpr   Expr   // HAVING expression
@@ -149,13 +150,17 @@ func (s *SelectStatement) String() string {
 			fmt.Fprintf(&buf, " WHERE %s", s.WhereExpr.String())
 		}
 
-		if len(s.GroupByExprs) != 0 {
+		if len(s.GroupByExprs) != 0 || s.GroupByAll.IsValid() {
 			buf.WriteString(" GROUP BY ")
-			for i, expr := range s.GroupByExprs {
-				if i != 0 {
-					buf.WriteString(", ")
+			if s.GroupBy.IsValid() {
+				buf.WriteString("ALL")
+			} else {
+				for i, expr := range s.GroupByExprs {
+					if i != 0 {
+						buf.WriteString(", ")
+					}
+					buf.WriteString(expr.String())
 				}
-				buf.WriteString(expr.String())
 			}
 
 			if s.HavingExpr != nil {
@@ -718,6 +723,7 @@ type JoinOperator struct {
 	Natural Pos // position of NATURAL keyword
 	Left    Pos // position of LEFT keyword
 	Outer   Pos // position of OUTER keyword
+	Full    Pos // positon of FULL keyword
 	Inner   Pos // position of INNER keyword
 	Cross   Pos // position of CROSS keyword
 	Join    Pos // position of JOIN keyword
@@ -751,6 +757,11 @@ func (op *JoinOperator) String() string {
 		buf.WriteString(" INNER")
 	} else if op.Cross.IsValid() {
 		buf.WriteString(" CROSS")
+	} else if op.Full.IsValid() {
+		buf.WriteString(" FULL")
+		if op.Outer.IsValid() {
+			buf.WriteString(" OUTER")
+		}
 	}
 	buf.WriteString(" JOIN ")
 

@@ -292,7 +292,7 @@ func TestParser_ParseStatement(t *testing.T) {
 				},
 			},
 		})
-		AssertParseStatement(t, `SELECT * FROM foo NATURAL JOIN bar`, &query.SelectStatement{
+		AssertParseStatement(t, `SELECT * FROM foo FULL JOIN bar`, &query.SelectStatement{
 			Select: pos(0),
 			Columns: []*query.ResultColumn{
 				{Star: pos(7)},
@@ -302,9 +302,9 @@ func TestParser_ParseStatement(t *testing.T) {
 				X: &query.QualifiedTableName{
 					Name: &query.Ident{NamePos: pos(14), Name: "foo"},
 				},
-				Operator: &query.JoinOperator{Natural: pos(18), Join: pos(26)},
+				Operator: &query.JoinOperator{Full: pos(18), Join: pos(23)},
 				Y: &query.QualifiedTableName{
-					Name: &query.Ident{NamePos: pos(31), Name: "bar"},
+					Name: &query.Ident{NamePos: pos(28), Name: "bar"},
 				},
 			},
 		})
@@ -513,6 +513,13 @@ func TestParser_ParseStatement(t *testing.T) {
 				&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(18), Name: "foo"}},
 				&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(23), Name: "bar"}},
 			},
+		})
+		AssertParseStatement(t, `SELECT * GROUP BY ALL`, &query.SelectStatement{
+			Select:     pos(0),
+			Columns:    []*query.ResultColumn{{Star: pos(7)}},
+			Group:      pos(9),
+			GroupBy:    pos(15),
+			GroupByAll: pos(18),
 		})
 		AssertParseStatement(t, `SELECT * GROUP BY foo HAVING true`, &query.SelectStatement{
 			Select:  pos(0),

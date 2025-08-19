@@ -154,17 +154,21 @@ func (p *Parser) parseSelectStatement(compounded bool, withClause *WithClause) (
 			}
 			stmt.GroupBy, _, _ = p.scan()
 
-			for {
-				expr, err := p.ParseExpr()
-				if err != nil {
-					return &stmt, err
-				}
-				stmt.GroupByExprs = append(stmt.GroupByExprs, expr)
+			if p.peek() == ALL {
+				stmt.GroupByAll, _, _ = p.scan()
+			} else {
+				for {
+					expr, err := p.ParseExpr()
+					if err != nil {
+						return &stmt, err
+					}
+					stmt.GroupByExprs = append(stmt.GroupByExprs, expr)
 
-				if p.peek() != COMMA {
-					break
+					if p.peek() != COMMA {
+						break
+					}
+					p.scan()
 				}
-				p.scan()
 			}
 
 			// Parse optional HAVING clause.
@@ -353,7 +357,7 @@ func (p *Parser) parseSource() (source Source, err error) {
 	for {
 		// Exit immediately if not part of a join operator.
 		switch p.peek() {
-		case COMMA, NATURAL, LEFT, INNER, CROSS, JOIN:
+		case COMMA, NATURAL, FULL, LEFT, INNER, CROSS, JOIN:
 		default:
 			return source, nil
 		}
@@ -429,6 +433,11 @@ func (p *Parser) parseJoinOperator() (*JoinOperator, error) {
 		op.Inner, _, _ = p.scan()
 	case CROSS:
 		op.Cross, _, _ = p.scan()
+	case FULL:
+		op.Full, _, _ = p.scan()
+		if p.peek() == OUTER {
+			op.Outer, _, _ = p.scan()
+		}
 	}
 
 	// Parse final JOIN.
