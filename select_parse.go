@@ -396,7 +396,7 @@ func (p *Parser) parseUnarySource() (source Source, err error) {
 	switch p.peek() {
 	case LP:
 		return p.parseParenSource()
-	case IDENT, QIDENT, TSTRING:
+	case IDENT, QIDENT, TSTRING, BIND:
 		return p.parseQualifiedTable(true, true, true, true)
 	case VALUES:
 		return p.parseSelectStatement(false, nil)
@@ -832,17 +832,13 @@ func (p *Parser) parseWithStatement(inTrigger bool) (*SelectStatement, error) {
 }
 
 func (p *Parser) parseDeclarationStatement() (Statement, error) {
-	pos, _, val := p.scan()
-	n1 := &Ident{Name: val, NamePos: pos}
+	pos, tok, val := p.scan()
+	n1 := &Ident{Name: val, NamePos: pos, Bind: tok == BIND}
 	var t1 Expr
 	var v1 Expr
 
-	if p.peek() == BIND { // should be :
+	if p.peek() == ASSIGN { // should be :=
 		p.scan()
-		_, tok, _ := p.scan()
-		if tok != EQ {
-			return nil, p.errorExpected(p.pos, p.tok, ":= for bind")
-		}
 
 		expr, err := p.ParseExpr()
 		if err != nil {

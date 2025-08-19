@@ -41,7 +41,7 @@ func (s *Scanner) Scan() (pos Pos, token Token, lit string) {
 			return s.scanQuotedIdent()
 		} else if ch == '`' {
 			return s.scanQuotedIdent()
-		} else if ch == '?' || ch == ':' || ch == '@' || ch == '$' {
+		} else if ch == '@' {
 			return s.scanBind()
 		}
 
@@ -65,6 +65,12 @@ func (s *Scanner) Scan() (pos Pos, token Token, lit string) {
 				return s.scanTemplate()
 			}
 			return pos, ILLEGAL, "{"
+		case ':':
+			if s.peek() == '=' {
+				s.read()
+				return pos, ASSIGN, ":="
+			}
+			return pos, ILLEGAL, ":"
 		case '=':
 			if s.peek() == '=' {
 				s.read()
@@ -239,17 +245,8 @@ func (s *Scanner) scanBind() (Pos, Token, string) {
 	s.buf.Reset()
 	s.buf.WriteRune(start)
 
-	// Question mark starts a numeric bind.
-	if start == '?' {
-		for isDigit(s.peek()) {
-			ch, _ := s.read()
-			s.buf.WriteRune(ch)
-		}
-		return pos, BIND, s.buf.String()
-	}
-
 	// All other characters start an alphanumeric bind.
-	assert(start == ':' || start == '@' || start == '$')
+	assert(start == '@')
 	for isUnquotedIdent(s.peek()) {
 		ch, _ := s.read()
 		s.buf.WriteRune(ch)

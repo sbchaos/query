@@ -16,7 +16,6 @@ type Expr interface {
 }
 
 func (*BinaryExpr) node()     {}
-func (*BindExpr) node()       {}
 func (*Call) node()           {}
 func (*CaseBlock) node()      {}
 func (*CaseExpr) node()       {}
@@ -32,7 +31,6 @@ func (SelectExpr) node()      {}
 
 // Expression Types
 func (*BinaryExpr) expr()     {}
-func (*BindExpr) expr()       {}
 func (*Call) expr()           {}
 func (*CastExpr) expr()       {}
 func (*CaseExpr) expr()       {}
@@ -200,26 +198,6 @@ func (expr *BinaryExpr) String() string {
 	}
 }
 
-type BindExpr struct {
-	NamePos Pos    // name position
-	Name    string // binding name
-}
-
-// Clone returns a deep copy of expr.
-func (expr *BindExpr) Clone() *BindExpr {
-	if expr == nil {
-		return nil
-	}
-	other := *expr
-	return &other
-}
-
-// String returns the string representation of the expression.
-func (expr *BindExpr) String() string {
-	// TODO(BBJ): Support all bind characters.
-	return expr.Name
-}
-
 type Call struct {
 	Name     *MultiPartIdent // function name
 	Lparen   Pos             // position of left paren
@@ -227,6 +205,7 @@ type Call struct {
 	Distinct Pos             // position of DISTINCT keyword
 	Args     []Expr          // argument list
 	Rparen   Pos             // position of right paren
+	Over     *OverClause     // over clause
 }
 
 // Clone returns a deep copy of c.
@@ -505,6 +484,7 @@ type Ident struct {
 	NamePos Pos    // identifier position
 	Name    string // identifier name
 	Quote   rune   // type of quote
+	Bind    bool   // If this is a bind identifier
 }
 
 // Clone returns a deep copy of i.

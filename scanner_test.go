@@ -109,11 +109,7 @@ func TestScanner_Scan(t *testing.T) {
 		AssertScan(t, `123E-`, query.ILLEGAL, `123E-`)
 	})
 	t.Run("BIND", func(t *testing.T) {
-		AssertScan(t, `?'`, query.BIND, `?`)
-		AssertScan(t, `?123'`, query.BIND, `?123`)
-		AssertScan(t, `:foo_bar123'`, query.BIND, `:foo_bar123`)
 		AssertScan(t, `@bar'`, query.BIND, `@bar`)
-		AssertScan(t, `$baz'`, query.BIND, `$baz`)
 	})
 
 	t.Run("EOF", func(t *testing.T) {

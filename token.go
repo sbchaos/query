@@ -45,7 +45,7 @@ const (
 	NULL    // NULL
 	TRUE    // true
 	FALSE   // false
-	BIND    //? or ?NNN or :VVV or @VVV or $VVV
+	BIND    // @VVV
 	TMPL    // {{ Content }}
 	literal_end
 
@@ -73,6 +73,7 @@ const (
 	REM    // %
 	CONCAT // ||
 	DOT    // .
+	ASSIGN // :=
 
 	JSON_EXTRACT_JSON // ->
 	JSON_EXTRACT_SQL  // ->>
@@ -290,6 +291,7 @@ var tokens = [...]string{
 	REM:    "%",
 	CONCAT: "||",
 	DOT:    ".",
+	ASSIGN: ":=",
 
 	ABORT:             "ABORT",
 	ACTION:            "ACTION",
@@ -513,14 +515,14 @@ func (t Token) IsBinaryOp() bool {
 }
 
 func isIdentToken(tok Token) bool {
-	return tok == IDENT || tok == QIDENT || tok == TSTRING
+	return tok == IDENT || tok == QIDENT || tok == TSTRING || tok == BIND
 }
 
 // isExprIdentToken returns true if tok can be used as an identifier in an expression.
 // It includes IDENT, QIDENT, and certain keywords.
 func isExprIdentToken(tok Token) bool {
 	switch tok {
-	case IDENT, QIDENT, TSTRING:
+	case IDENT, QIDENT, TSTRING, BIND:
 		return true
 	// List keywords that can be used as identifiers in expressions
 	case ROWID, CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP:

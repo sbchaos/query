@@ -78,6 +78,8 @@ func (p *Parser) parseIdent(desc string) (*Ident, error) {
 		return &Ident{Name: lit, NamePos: pos, Quote: '"'}, nil
 	case TSTRING:
 		return &Ident{Name: lit, NamePos: pos, Quote: '`'}, nil
+	case BIND:
+		return &Ident{Name: lit, NamePos: pos, Bind: true}, nil
 	case NULL:
 		return &Ident{Name: lit, NamePos: pos}, nil
 	default:
@@ -141,7 +143,7 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 	pos, tok, lit := p.scan()
 	switch {
 	case isExprIdentToken(tok):
-		ident := &Ident{Name: lit, NamePos: pos, Quote: quoteRune(tok)}
+		ident := &Ident{Name: lit, NamePos: pos, Quote: quoteRune(tok), Bind: tok == BIND}
 		return p.parseIdentifier(ident)
 	case tok == STRING:
 		return &StringLit{ValuePos: pos, Value: lit}, nil
@@ -156,7 +158,7 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 	case tok == TRUE, tok == FALSE:
 		return &BoolLit{ValuePos: pos, Value: tok == TRUE}, nil
 	case tok == BIND:
-		return &BindExpr{NamePos: pos, Name: lit}, nil
+		return &Ident{NamePos: pos, Name: lit, Bind: true}, nil
 	case tok == PLUS, tok == MINUS, tok == BITNOT:
 		expr, err = p.parseOperand()
 		if err != nil {
@@ -366,6 +368,13 @@ func (p *Parser) parseCall(name *MultiPartIdent) (_ *Call, err error) {
 		return &expr, p.errorExpected(p.pos, p.tok, "right paren")
 	}
 	expr.Rparen, _, _ = p.scan()
+
+	// Parse optional over clause.
+	if p.peek() == OVER {
+		if expr.Over, err = p.parseOverClause(); err != nil {
+			return &expr, err
+		}
+	}
 
 	return &expr, nil
 }
