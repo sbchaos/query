@@ -89,10 +89,11 @@ type InsertStatement struct {
 	Replace   Pos // position of REPLACE keyword
 	Into      Pos // position of INTO keyword
 	Overwrite Pos // positon of OVERWRITE keyword
+	TablePos  Pos // positon of Table Keyword
 
-	Table *Ident // table name
-	As    Pos    // position of AS keyword
-	Alias *Ident // optional alias
+	Table *MultiPartIdent // table name
+	As    Pos             // position of AS keyword
+	Alias *Ident          // optional alias
 
 	ColumnsLparen Pos      // position of column list left paren
 	Columns       []*Ident // optional column list
@@ -140,8 +141,12 @@ func (s *InsertStatement) String() string {
 	} else {
 		buf.WriteString("INSERT")
 	}
+	buf.WriteString(" INTO")
+	if s.TablePos.IsValid() {
+		buf.WriteString(" TABLE ")
+	}
 
-	fmt.Fprintf(&buf, " INTO %s", s.Table.String())
+	buf.WriteString(s.Table.String())
 	if s.Alias != nil {
 		fmt.Fprintf(&buf, " AS %s", s.Alias.String())
 	}

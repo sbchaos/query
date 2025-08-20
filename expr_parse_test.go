@@ -9,8 +9,8 @@ import (
 )
 
 func TestIdent_String(t *testing.T) {
-	AssertExprStringer(t, &query.Ident{Name: "foo", Quote: '"'}, `"foo"`)
-	AssertExprStringer(t, &query.Ident{Name: "foo \" bar", Quote: '"'}, `"foo "" bar"`)
+	AssertExprStringer(t, &query.Ident{Name: "foo", Tok: query.QIDENT}, `"foo"`)
+	AssertExprStringer(t, &query.Ident{Name: "foo \" bar", Tok: query.QIDENT}, `"foo "" bar"`)
 }
 
 func TestMultiPartIdent_String(t *testing.T) {
@@ -81,21 +81,21 @@ func TestExprList_String(t *testing.T) {
 func TestQualifiedRef_String(t *testing.T) {
 	AssertExprStringer(t, &query.QualifiedRef{
 		Name: &query.MultiPartIdent{
-			First: &query.Ident{Name: "tbl", Quote: '"'},
-			Name:  &query.Ident{Name: "col", Quote: '"'}}}, `"tbl"."col"`)
+			First: &query.Ident{Name: "tbl", Tok: query.QIDENT},
+			Name:  &query.Ident{Name: "col", Tok: query.QIDENT}}}, `"tbl"."col"`)
 	AssertExprStringer(t, &query.QualifiedRef{
 		Name: &query.MultiPartIdent{
-			Name: &query.Ident{Name: "tbl", Quote: '"'},
+			Name: &query.Ident{Name: "tbl", Tok: query.QIDENT},
 		},
 		Star: pos(0)}, `"tbl".*`)
 }
 
 func TestCall_String(t *testing.T) {
-	AssertExprStringer(t, &query.Call{Name: &query.MultiPartIdent{Name: &query.Ident{Name: "foo"}}}, `foo()`)
-	AssertExprStringer(t, &query.Call{Name: &query.MultiPartIdent{Name: &query.Ident{Name: "foo"}}, Star: pos(0)}, `foo(*)`)
+	AssertExprStringer(t, &query.Call{Name: &query.MultiPartIdent{Name: &query.Ident{Name: "foo", Tok: query.IDENT}}}, `foo()`)
+	AssertExprStringer(t, &query.Call{Name: &query.MultiPartIdent{Name: &query.Ident{Name: "foo", Tok: query.IDENT}}, Star: pos(0)}, `foo(*)`)
 
 	AssertExprStringer(t, &query.Call{
-		Name:     &query.MultiPartIdent{Name: &query.Ident{Name: "foo"}},
+		Name:     &query.MultiPartIdent{Name: &query.Ident{Name: "foo", Tok: query.IDENT}},
 		Distinct: pos(0),
 		Args: []query.Expr{
 			&query.NullLit{},
@@ -106,7 +106,7 @@ func TestCall_String(t *testing.T) {
 
 func TestParser_ParseExpr(t *testing.T) {
 	t.Run("Ident", func(t *testing.T) {
-		AssertParseExpr(t, `fooBAR_123'`, &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(0), Name: `fooBAR_123`}})
+		AssertParseExpr(t, `fooBAR_123'`, &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(0), Name: `fooBAR_123`, Tok: query.IDENT}})
 	})
 	t.Run("StringLit", func(t *testing.T) {
 		AssertParseExpr(t, `'foo bar'`, &query.StringLit{ValuePos: pos(0), Value: `foo bar`})
@@ -129,36 +129,36 @@ func TestParser_ParseExpr(t *testing.T) {
 	})
 	t.Run("UnaryExpr", func(t *testing.T) {
 		AssertParseExpr(t, `-123`, &query.UnaryExpr{OpPos: pos(0), Op: query.MINUS, X: &query.NumberLit{ValuePos: pos(1), Value: `123`}})
-		AssertParseExpr(t, `NOT foo`, &query.UnaryExpr{OpPos: pos(0), Op: query.NOT, X: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(4), Name: "foo"}}})
+		AssertParseExpr(t, `NOT foo`, &query.UnaryExpr{OpPos: pos(0), Op: query.NOT, X: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(4), Name: "foo", Tok: query.IDENT}}})
 		AssertParseExpr(t, `~1`, &query.UnaryExpr{OpPos: pos(0), Op: query.BITNOT, X: &query.NumberLit{ValuePos: pos(1), Value: "1"}})
 		AssertParseExprError(t, `-`, `1:1: expected expression, found 'EOF'`)
 	})
 	t.Run("MultiPartIdent", func(t *testing.T) {
 		AssertParseExpr(t, `"tbl"."col"`, &query.MultiPartIdent{
-			First: &query.Ident{NamePos: pos(0), Name: "tbl", Quote: '"'},
+			First: &query.Ident{NamePos: pos(0), Name: "tbl", Tok: query.QIDENT},
 			Dot1:  pos(5),
-			Name:  &query.Ident{NamePos: pos(6), Name: "col", Quote: '"'},
+			Name:  &query.Ident{NamePos: pos(6), Name: "col", Tok: query.QIDENT},
 		})
 		AssertParseExpr(t, `proj.schema.my_table`, &query.MultiPartIdent{
-			First:  &query.Ident{NamePos: pos(0), Name: "proj"},
+			First:  &query.Ident{NamePos: pos(0), Name: "proj", Tok: query.IDENT},
 			Dot1:   pos(4),
-			Second: &query.Ident{NamePos: pos(5), Name: "schema"},
+			Second: &query.Ident{NamePos: pos(5), Name: "schema", Tok: query.IDENT},
 			Dot2:   pos(11),
-			Name:   &query.Ident{NamePos: pos(12), Name: "my_table"},
+			Name:   &query.Ident{NamePos: pos(12), Name: "my_table", Tok: query.IDENT},
 		})
 		AssertParseExpr(t, "`proj`.schema.my_table", &query.MultiPartIdent{
-			First:  &query.Ident{NamePos: pos(0), Name: "proj", Quote: '`'},
+			First:  &query.Ident{NamePos: pos(0), Name: "proj", Tok: query.TSTRING},
 			Dot1:   pos(6),
-			Second: &query.Ident{NamePos: pos(7), Name: "schema"},
+			Second: &query.Ident{NamePos: pos(7), Name: "schema", Tok: query.IDENT},
 			Dot2:   pos(13),
-			Name:   &query.Ident{NamePos: pos(14), Name: "my_table"},
+			Name:   &query.Ident{NamePos: pos(14), Name: "my_table", Tok: query.IDENT},
 		})
 		AssertParseExpr(t, "`proj`.`schema`.`my_table`", &query.MultiPartIdent{
-			First:  &query.Ident{NamePos: pos(0), Name: "proj", Quote: '`'},
+			First:  &query.Ident{NamePos: pos(0), Name: "proj", Tok: query.TSTRING},
 			Dot1:   pos(6),
-			Second: &query.Ident{NamePos: pos(7), Name: "schema", Quote: '`'},
+			Second: &query.Ident{NamePos: pos(7), Name: "schema", Tok: query.TSTRING},
 			Dot2:   pos(15),
-			Name:   &query.Ident{NamePos: pos(16), Name: "my_table", Quote: '`'},
+			Name:   &query.Ident{NamePos: pos(16), Name: "my_table", Tok: query.TSTRING},
 		})
 	})
 	t.Run("QualifiedRef", func(t *testing.T) {
@@ -167,6 +167,7 @@ func TestParser_ParseExpr(t *testing.T) {
 				Name: &query.Ident{
 					NamePos: pos(0),
 					Name:    "tbl",
+					Tok:     query.IDENT,
 				},
 			},
 			Dot:  pos(3),
@@ -393,6 +394,7 @@ func TestParser_ParseExpr(t *testing.T) {
 				Name: &query.Ident{
 					NamePos: pos(0),
 					Name:    "sum",
+					Tok:     query.IDENT,
 				},
 			},
 			Lparen: pos(3),
@@ -400,18 +402,18 @@ func TestParser_ParseExpr(t *testing.T) {
 		})
 		AssertParseExpr(t, `project.default.sum()`, &query.Call{
 			Name: &query.MultiPartIdent{
-				First:  &query.Ident{NamePos: pos(0), Name: "project"},
+				First:  &query.Ident{NamePos: pos(0), Name: "project", Tok: query.IDENT},
 				Dot1:   pos(7),
-				Second: &query.Ident{NamePos: pos(8), Name: "default"},
+				Second: &query.Ident{NamePos: pos(8), Name: "default", Tok: query.IDENT},
 				Dot2:   pos(15),
-				Name:   &query.Ident{NamePos: pos(16), Name: "sum"},
+				Name:   &query.Ident{NamePos: pos(16), Name: "sum", Tok: query.IDENT},
 			},
 			Lparen: pos(19),
 			Rparen: pos(20),
 		})
 		AssertParseExpr(t, `sum(*)`, &query.Call{
 			Name: &query.MultiPartIdent{
-				Name: &query.Ident{NamePos: pos(0), Name: "sum"},
+				Name: &query.Ident{NamePos: pos(0), Name: "sum", Tok: query.IDENT},
 			},
 			Lparen: pos(3),
 			Star:   pos(4),
@@ -419,18 +421,18 @@ func TestParser_ParseExpr(t *testing.T) {
 		})
 		AssertParseExpr(t, `sum(foo, 123)`, &query.Call{
 			Name: &query.MultiPartIdent{
-				Name: &query.Ident{NamePos: pos(0), Name: "sum"},
+				Name: &query.Ident{NamePos: pos(0), Name: "sum", Tok: query.IDENT},
 			},
 			Lparen: pos(3),
 			Args: []query.Expr{
-				&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(4), Name: "foo"}},
+				&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(4), Name: "foo", Tok: query.IDENT}},
 				&query.NumberLit{ValuePos: pos(9), Value: "123"},
 			},
 			Rparen: pos(12),
 		})
 		AssertParseExpr(t, `sum(distinct 'foo')`, &query.Call{
 			Name: &query.MultiPartIdent{
-				Name: &query.Ident{NamePos: pos(0), Name: "sum"},
+				Name: &query.Ident{NamePos: pos(0), Name: "sum", Tok: query.IDENT},
 			},
 			Lparen:   pos(3),
 			Distinct: pos(4),
@@ -441,14 +443,14 @@ func TestParser_ParseExpr(t *testing.T) {
 		})
 		AssertParseExpr(t, `sum(1, sum(2, 3))`, &query.Call{
 			Name: &query.MultiPartIdent{
-				Name: &query.Ident{NamePos: pos(0), Name: "sum"},
+				Name: &query.Ident{NamePos: pos(0), Name: "sum", Tok: query.IDENT},
 			},
 			Lparen: pos(3),
 			Args: []query.Expr{
 				&query.NumberLit{ValuePos: pos(4), Value: "1"},
 				&query.Call{
 					Name: &query.MultiPartIdent{
-						Name: &query.Ident{NamePos: pos(7), Name: "sum"},
+						Name: &query.Ident{NamePos: pos(7), Name: "sum", Tok: query.IDENT},
 					},
 					Lparen: pos(10),
 					Args: []query.Expr{
@@ -462,12 +464,12 @@ func TestParser_ParseExpr(t *testing.T) {
 		})
 		AssertParseExpr(t, `sum(sum(1,2), sum(3, 4))`, &query.Call{
 			Name: &query.MultiPartIdent{
-				Name: &query.Ident{NamePos: pos(0), Name: "sum"},
+				Name: &query.Ident{NamePos: pos(0), Name: "sum", Tok: query.IDENT},
 			},
 			Lparen: pos(3),
 			Args: []query.Expr{
 				&query.Call{
-					Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(4), Name: "sum"}},
+					Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(4), Name: "sum", Tok: query.IDENT}},
 					Lparen: pos(7),
 					Args: []query.Expr{
 						&query.NumberLit{ValuePos: pos(8), Value: "1"},
@@ -475,7 +477,7 @@ func TestParser_ParseExpr(t *testing.T) {
 					},
 					Rparen: pos(11),
 				}, &query.Call{
-					Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "sum"}},
+					Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "sum", Tok: query.IDENT}},
 					Lparen: pos(17),
 					Args: []query.Expr{
 						&query.NumberLit{ValuePos: pos(18), Value: "3"},

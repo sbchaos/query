@@ -72,19 +72,13 @@ func (p *Parser) parseCastExpr() (_ *CastExpr, err error) {
 func (p *Parser) parseIdent(desc string) (*Ident, error) {
 	pos, tok, lit := p.scan()
 	switch tok {
-	case IDENT:
-		return &Ident{Name: lit, NamePos: pos}, nil
-	case QIDENT:
-		return &Ident{Name: lit, NamePos: pos, Quote: '"'}, nil
-	case TSTRING:
-		return &Ident{Name: lit, NamePos: pos, Quote: '`'}, nil
-	case BIND:
-		return &Ident{Name: lit, NamePos: pos, Bind: true}, nil
+	case IDENT, QIDENT, TSTRING, BIND, TMPL:
+		return &Ident{Name: lit, NamePos: pos, Tok: tok}, nil
 	case NULL:
 		return &Ident{Name: lit, NamePos: pos}, nil
 	default:
 		if isBareToken(tok) {
-			return &Ident{Name: lit, NamePos: pos}, nil
+			return &Ident{Name: lit, NamePos: pos, Tok: tok}, nil
 		}
 		return nil, p.errorExpected(pos, tok, desc)
 	}
@@ -143,7 +137,7 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 	pos, tok, lit := p.scan()
 	switch {
 	case isExprIdentToken(tok):
-		ident := &Ident{Name: lit, NamePos: pos, Quote: quoteRune(tok), Bind: tok == BIND}
+		ident := &Ident{Name: lit, NamePos: pos, Tok: tok}
 		return p.parseIdentifier(ident)
 	case tok == STRING:
 		return &StringLit{ValuePos: pos, Value: lit}, nil
@@ -158,7 +152,7 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 	case tok == TRUE, tok == FALSE:
 		return &BoolLit{ValuePos: pos, Value: tok == TRUE}, nil
 	case tok == BIND:
-		return &Ident{NamePos: pos, Name: lit, Bind: true}, nil
+		return &Ident{NamePos: pos, Name: lit, Tok: tok}, nil
 	case tok == PLUS, tok == MINUS, tok == BITNOT:
 		expr, err = p.parseOperand()
 		if err != nil {
@@ -223,7 +217,7 @@ func (p *Parser) parseMultiIdent(ident *Ident) (*MultiPartIdent, Pos) {
 	}
 	// Next ident
 	pos, tok, lit := p.scan()
-	ident2 := &Ident{Name: lit, NamePos: pos, Quote: quoteRune(tok)}
+	ident2 := &Ident{Name: lit, NamePos: pos, Tok: tok}
 
 	if p.peek() != DOT {
 		return &MultiPartIdent{First: ident, Dot1: dot1, Name: ident2}, emptyPos
@@ -236,7 +230,7 @@ func (p *Parser) parseMultiIdent(ident *Ident) (*MultiPartIdent, Pos) {
 
 	// Next ident
 	pos2, tok2, lit2 := p.scan()
-	ident3 := &Ident{Name: lit2, NamePos: pos2, Quote: quoteRune(tok2)}
+	ident3 := &Ident{Name: lit2, NamePos: pos2, Tok: tok2}
 
 	return &MultiPartIdent{
 		First:  ident,

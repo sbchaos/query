@@ -67,7 +67,7 @@ func (p *Parser) parseNonExplainStatement() (Statement, error) {
 
 func (p *Parser) parseDeclarationStatement() (Statement, error) {
 	pos, tok, val := p.scan()
-	n1 := &Ident{Name: val, NamePos: pos, Bind: tok == BIND}
+	n1 := &Ident{Name: val, NamePos: pos, Tok: tok}
 	var t1 Expr
 	var v1 Expr
 
@@ -146,10 +146,20 @@ func (p *Parser) parseInsertStatement(withClause *WithClause) (_ *InsertStatemen
 		return &stmt, p.errorExpected(p.pos, p.tok, "INTO or OVERWRITE")
 	}
 
+	if p.peek() == TABLE {
+		stmt.TablePos, _, _ = p.scan()
+	}
+
 	// Parse table name & optional alias.
-	if stmt.Table, err = p.parseIdent("table name"); err != nil {
+	ident, err := p.parseIdent("table name")
+	if err != nil {
+		return nil, err
+	}
+	mIdent, dotPos := p.parseMultiIdent(ident)
+	if dotPos.IsValid() {
 		return &stmt, err
 	}
+	stmt.Table = mIdent
 	if p.peek() == AS {
 		stmt.As, _, _ = p.scan()
 		if stmt.Alias, err = p.parseIdent("alias"); err != nil {
@@ -379,7 +389,7 @@ func (p *Parser) parseDeleteStatement(withClause *WithClause) (_ *DeleteStatemen
 		return nil, p.errorExpected(p.pos, p.tok, "table name")
 	}
 	ident, _ := p.parseIdent("table name")
-	if stmt.Table, err = p.parseQualifiedTableName(ident, true, true, true, true); err != nil {
+	if stmt.Table, err = p.parseQualifiedTableName(ident, true, true); err != nil {
 		return &stmt, err
 	}
 

@@ -97,7 +97,7 @@ func TestParser_ParseStatement(t *testing.T) {
 			},
 			From: pos(9),
 			Source: &query.QualifiedTableName{
-				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "tbl"}},
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "tbl", Tok: query.IDENT}},
 			},
 		})
 
@@ -109,9 +109,9 @@ func TestParser_ParseStatement(t *testing.T) {
 			From: pos(9),
 			Source: &query.QualifiedTableName{
 				Name: &query.MultiPartIdent{
-					First: &query.Ident{NamePos: pos(14), Name: "main"},
+					First: &query.Ident{NamePos: pos(14), Name: "main", Tok: query.IDENT},
 					Dot1:  pos(18),
-					Name:  &query.Ident{NamePos: pos(19), Name: "tbl"}},
+					Name:  &query.Ident{NamePos: pos(19), Name: "tbl", Tok: query.IDENT}},
 			},
 		})
 
@@ -123,7 +123,7 @@ func TestParser_ParseStatement(t *testing.T) {
 			},
 			From: pos(18),
 			Source: &query.QualifiedTableName{
-				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(23), Name: "tbl"}},
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(23), Name: "tbl", Tok: query.IDENT}},
 			},
 		})
 
@@ -135,7 +135,7 @@ func TestParser_ParseStatement(t *testing.T) {
 			},
 			From: pos(13),
 			Source: &query.QualifiedTableName{
-				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(18), Name: "tbl"}},
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(18), Name: "tbl", Tok: query.IDENT}},
 			},
 		})
 
@@ -146,8 +146,8 @@ func TestParser_ParseStatement(t *testing.T) {
 			},
 			From: pos(9),
 			Source: &query.QualifiedTableName{
-				Name:  &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "tbl"}},
-				Alias: &query.Ident{NamePos: pos(18), Name: "tbl2"},
+				Name:  &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "tbl", Tok: query.IDENT}},
+				Alias: &query.Ident{NamePos: pos(18), Name: "tbl2", Tok: query.IDENT},
 			},
 		})
 		AssertParseStatement(t, `SELECT * FROM tbl AS tbl2`, &query.SelectStatement{
@@ -157,9 +157,9 @@ func TestParser_ParseStatement(t *testing.T) {
 			},
 			From: pos(9),
 			Source: &query.QualifiedTableName{
-				Name:  &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "tbl"}},
+				Name:  &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "tbl", Tok: query.IDENT}},
 				As:    pos(18),
-				Alias: &query.Ident{NamePos: pos(21), Name: "tbl2"},
+				Alias: &query.Ident{NamePos: pos(21), Name: "tbl2", Tok: query.IDENT},
 			},
 		})
 		AssertParseStatement(t, `SELECT * FROM main.tbl AS tbl2`, &query.SelectStatement{
@@ -170,11 +170,11 @@ func TestParser_ParseStatement(t *testing.T) {
 			From: pos(9),
 			Source: &query.QualifiedTableName{
 				Name: &query.MultiPartIdent{
-					First: &query.Ident{NamePos: pos(14), Name: "main"},
+					First: &query.Ident{NamePos: pos(14), Name: "main", Tok: query.IDENT},
 					Dot1:  pos(18),
-					Name:  &query.Ident{NamePos: pos(19), Name: "tbl"}},
+					Name:  &query.Ident{NamePos: pos(19), Name: "tbl", Tok: query.IDENT}},
 				As:    pos(23),
-				Alias: &query.Ident{NamePos: pos(26), Name: "tbl2"},
+				Alias: &query.Ident{NamePos: pos(26), Name: "tbl2", Tok: query.IDENT},
 			},
 		})
 		AssertParseStatement(t, `SELECT * FROM tbl INDEXED BY idx`, &query.SelectStatement{
@@ -184,10 +184,10 @@ func TestParser_ParseStatement(t *testing.T) {
 			},
 			From: pos(9),
 			Source: &query.QualifiedTableName{
-				Name:      &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "tbl"}},
+				Name:      &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "tbl", Tok: query.IDENT}},
 				Indexed:   pos(18),
 				IndexedBy: pos(26),
-				Index:     &query.Ident{NamePos: pos(29), Name: "idx"},
+				Index:     &query.Ident{NamePos: pos(29), Name: "idx", Tok: query.IDENT},
 			},
 		})
 		AssertParseStatement(t, `SELECT * FROM tbl NOT INDEXED`, &query.SelectStatement{
@@ -197,7 +197,7 @@ func TestParser_ParseStatement(t *testing.T) {
 			},
 			From: pos(9),
 			Source: &query.QualifiedTableName{
-				Name:       &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "tbl"}},
+				Name:       &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "tbl", Tok: query.IDENT}},
 				Not:        pos(18),
 				NotIndexed: pos(22),
 			},
@@ -219,7 +219,7 @@ func TestParser_ParseStatement(t *testing.T) {
 				},
 				Rparen: pos(23),
 				As:     pos(25),
-				Alias:  &query.Ident{NamePos: pos(28), Name: "tbl"},
+				Alias:  &query.Ident{NamePos: pos(28), Name: "tbl", Tok: query.IDENT},
 			},
 		})
 
@@ -255,10 +255,10 @@ func TestParser_ParseStatement(t *testing.T) {
 			Source: &query.ParenSource{
 				Lparen: pos(14),
 				X: &query.QualifiedTableName{
-					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(16), Name: "t"}},
+					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(16), Name: "t", Tok: query.IDENT}},
 				},
 				Rparen: pos(18),
-				Alias:  &query.Ident{NamePos: pos(20), Name: "a"},
+				Alias:  &query.Ident{NamePos: pos(20), Name: "a", Tok: query.IDENT},
 			},
 		})
 
@@ -270,11 +270,11 @@ func TestParser_ParseStatement(t *testing.T) {
 			From: pos(9),
 			Source: &query.JoinClause{
 				X: &query.QualifiedTableName{
-					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "foo"}},
+					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "foo", Tok: query.IDENT}},
 				},
 				Operator: &query.JoinOperator{Comma: pos(17)},
 				Y: &query.QualifiedTableName{
-					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(19), Name: "bar"}},
+					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(19), Name: "bar", Tok: query.IDENT}},
 				},
 			},
 		})
@@ -286,11 +286,11 @@ func TestParser_ParseStatement(t *testing.T) {
 			From: pos(9),
 			Source: &query.JoinClause{
 				X: &query.QualifiedTableName{
-					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "foo"}},
+					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "foo", Tok: query.IDENT}},
 				},
 				Operator: &query.JoinOperator{Join: pos(18)},
 				Y: &query.QualifiedTableName{
-					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(23), Name: "bar"}},
+					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(23), Name: "bar", Tok: query.IDENT}},
 				},
 			},
 		})
@@ -302,11 +302,11 @@ func TestParser_ParseStatement(t *testing.T) {
 			From: pos(9),
 			Source: &query.JoinClause{
 				X: &query.QualifiedTableName{
-					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "foo"}},
+					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "foo", Tok: query.IDENT}},
 				},
 				Operator: &query.JoinOperator{Full: pos(18), Join: pos(23)},
 				Y: &query.QualifiedTableName{
-					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(28), Name: "bar"}},
+					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(28), Name: "bar", Tok: query.IDENT}},
 				},
 			},
 		})
@@ -318,11 +318,11 @@ func TestParser_ParseStatement(t *testing.T) {
 			From: pos(9),
 			Source: &query.JoinClause{
 				X: &query.QualifiedTableName{
-					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "foo"}},
+					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "foo", Tok: query.IDENT}},
 				},
 				Operator: &query.JoinOperator{Inner: pos(18), Join: pos(24)},
 				Y: &query.QualifiedTableName{
-					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(29), Name: "bar"}},
+					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(29), Name: "bar", Tok: query.IDENT}},
 				},
 				Constraint: &query.OnConstraint{
 					On: pos(33),
@@ -338,18 +338,18 @@ func TestParser_ParseStatement(t *testing.T) {
 			From: pos(9),
 			Source: &query.JoinClause{
 				X: &query.QualifiedTableName{
-					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "foo"}},
+					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "foo", Tok: query.IDENT}},
 				},
 				Operator: &query.JoinOperator{Left: pos(18), Join: pos(23)},
 				Y: &query.QualifiedTableName{
-					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(28), Name: "bar"}},
+					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(28), Name: "bar", Tok: query.IDENT}},
 				},
 				Constraint: &query.UsingConstraint{
 					Using:  pos(32),
 					Lparen: pos(38),
 					Columns: []*query.Ident{
-						{NamePos: pos(39), Name: "x"},
-						{NamePos: pos(42), Name: "y"},
+						{NamePos: pos(39), Name: "x", Tok: query.IDENT},
+						{NamePos: pos(42), Name: "y", Tok: query.IDENT},
 					},
 					Rparen: pos(43),
 				},
@@ -363,16 +363,16 @@ func TestParser_ParseStatement(t *testing.T) {
 			From: pos(9),
 			Source: &query.JoinClause{
 				X: &query.QualifiedTableName{
-					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "X"}},
+					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "X", Tok: query.IDENT}},
 				},
 				Operator: &query.JoinOperator{Inner: pos(16), Join: pos(22)},
 				Y: &query.JoinClause{
 					X: &query.QualifiedTableName{
-						Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(27), Name: "Y"}},
+						Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(27), Name: "Y", Tok: query.IDENT}},
 					},
 					Operator: &query.JoinOperator{Inner: pos(37), Join: pos(43)},
 					Y: &query.QualifiedTableName{
-						Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(48), Name: "Z"}},
+						Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(48), Name: "Z", Tok: query.IDENT}},
 					},
 					Constraint: &query.OnConstraint{
 						On: pos(50),
@@ -394,11 +394,11 @@ func TestParser_ParseStatement(t *testing.T) {
 			From: pos(9),
 			Source: &query.JoinClause{
 				X: &query.QualifiedTableName{
-					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "foo"}},
+					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "foo", Tok: query.IDENT}},
 				},
 				Operator: &query.JoinOperator{Left: pos(18), Outer: pos(23), Join: pos(29)},
 				Y: &query.QualifiedTableName{
-					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(34), Name: "bar"}},
+					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(34), Name: "bar", Tok: query.IDENT}},
 				},
 			},
 		})
@@ -410,11 +410,11 @@ func TestParser_ParseStatement(t *testing.T) {
 			From: pos(9),
 			Source: &query.JoinClause{
 				X: &query.QualifiedTableName{
-					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "foo"}},
+					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "foo", Tok: query.IDENT}},
 				},
 				Operator: &query.JoinOperator{Cross: pos(18), Join: pos(24)},
 				Y: &query.QualifiedTableName{
-					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(29), Name: "bar"}},
+					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(29), Name: "bar", Tok: query.IDENT}},
 				},
 			},
 		})
@@ -424,11 +424,11 @@ func TestParser_ParseStatement(t *testing.T) {
 				With: pos(0),
 				CTEs: []*query.CTE{
 					{
-						TableName:     &query.Ident{NamePos: pos(5), Name: "cte"},
+						TableName:     &query.Ident{NamePos: pos(5), Name: "cte", Tok: query.IDENT},
 						ColumnsLparen: pos(9),
 						Columns: []*query.Ident{
-							{NamePos: pos(10), Name: "foo"},
-							{NamePos: pos(15), Name: "bar"},
+							{NamePos: pos(10), Name: "foo", Tok: query.IDENT},
+							{NamePos: pos(15), Name: "bar", Tok: query.IDENT},
 						},
 						ColumnsRparen: pos(18),
 						As:            pos(20),
@@ -437,20 +437,20 @@ func TestParser_ParseStatement(t *testing.T) {
 							Select: pos(24),
 							Columns: []*query.ResultColumn{
 								{Expr: &query.MultiPartIdent{
-									Name: &query.Ident{NamePos: pos(31), Name: "baz"}},
+									Name: &query.Ident{NamePos: pos(31), Name: "baz", Tok: query.IDENT}},
 								},
 							},
 						},
 						SelectRparen: pos(34),
 					},
 					{
-						TableName:    &query.Ident{NamePos: pos(37), Name: "xxx"},
+						TableName:    &query.Ident{NamePos: pos(37), Name: "xxx", Tok: query.IDENT},
 						As:           pos(41),
 						SelectLparen: pos(44),
 						Select: &query.SelectStatement{
 							Select: pos(45),
 							Columns: []*query.ResultColumn{
-								{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(52), Name: "yyy"}}},
+								{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(52), Name: "yyy", Tok: query.IDENT}}},
 							},
 						},
 						SelectRparen: pos(55),
@@ -459,7 +459,7 @@ func TestParser_ParseStatement(t *testing.T) {
 			},
 			Select: pos(57),
 			Columns: []*query.ResultColumn{
-				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(64), Name: "bat"}}},
+				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(64), Name: "bat", Tok: query.IDENT}}},
 			},
 		})
 		AssertParseStatement(t, `WITH RECURSIVE cte AS (SELECT foo) SELECT bar`, &query.SelectStatement{
@@ -468,13 +468,13 @@ func TestParser_ParseStatement(t *testing.T) {
 				Recursive: pos(5),
 				CTEs: []*query.CTE{
 					{
-						TableName:    &query.Ident{NamePos: pos(15), Name: "cte"},
+						TableName:    &query.Ident{NamePos: pos(15), Name: "cte", Tok: query.IDENT},
 						As:           pos(19),
 						SelectLparen: pos(22),
 						Select: &query.SelectStatement{
 							Select: pos(23),
 							Columns: []*query.ResultColumn{
-								{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(30), Name: "foo"}}},
+								{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(30), Name: "foo", Tok: query.IDENT}}},
 							},
 						},
 						SelectRparen: pos(33),
@@ -483,7 +483,7 @@ func TestParser_ParseStatement(t *testing.T) {
 			},
 			Select: pos(35),
 			Columns: []*query.ResultColumn{
-				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(42), Name: "bar"}}},
+				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(42), Name: "bar", Tok: query.IDENT}}},
 			},
 		})
 
@@ -512,8 +512,8 @@ func TestParser_ParseStatement(t *testing.T) {
 			Group:   pos(9),
 			GroupBy: pos(15),
 			GroupByExprs: []query.Expr{
-				&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(18), Name: "foo"}},
-				&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(23), Name: "bar"}},
+				&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(18), Name: "foo", Tok: query.IDENT}},
+				&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(23), Name: "bar", Tok: query.IDENT}},
 			},
 		})
 		AssertParseStatement(t, `SELECT * GROUP BY ALL`, &query.SelectStatement{
@@ -529,7 +529,7 @@ func TestParser_ParseStatement(t *testing.T) {
 			Group:   pos(9),
 			GroupBy: pos(15),
 			GroupByExprs: []query.Expr{
-				&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(18), Name: "foo"}},
+				&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(18), Name: "foo", Tok: query.IDENT}},
 			},
 			Having:     pos(22),
 			HavingExpr: &query.BoolLit{ValuePos: pos(29), Value: true},
@@ -540,7 +540,7 @@ func TestParser_ParseStatement(t *testing.T) {
 			Window:  pos(9),
 			Windows: []*query.Window{
 				{
-					Name: &query.Ident{NamePos: pos(16), Name: "win1"},
+					Name: &query.Ident{NamePos: pos(16), Name: "win1", Tok: query.IDENT},
 					As:   pos(21),
 					Definition: &query.WindowDefinition{
 						Lparen: pos(24),
@@ -548,7 +548,7 @@ func TestParser_ParseStatement(t *testing.T) {
 					},
 				},
 				{
-					Name: &query.Ident{NamePos: pos(28), Name: "win2"},
+					Name: &query.Ident{NamePos: pos(28), Name: "win2", Tok: query.IDENT},
 					As:   pos(33),
 					Definition: &query.WindowDefinition{
 						Lparen: pos(36),
@@ -566,8 +566,8 @@ func TestParser_ParseStatement(t *testing.T) {
 			Order:   pos(9),
 			OrderBy: pos(15),
 			OrderingTerms: []*query.OrderingTerm{
-				{X: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(18), Name: "foo"}}, Asc: pos(22)},
-				{X: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(27), Name: "bar"}}, Desc: pos(31)},
+				{X: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(18), Name: "foo", Tok: query.IDENT}}, Asc: pos(22)},
+				{X: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(27), Name: "bar", Tok: query.IDENT}}, Desc: pos(31)},
 			},
 		})
 
@@ -602,16 +602,16 @@ func TestParser_ParseStatement(t *testing.T) {
 		AssertParseStatement(t, `SELECT shop_uuid, price_range FROM merchant_price WHERE sale_date = '{{ .DSTART | Date }}'`, &query.SelectStatement{
 			Select: pos(0),
 			Columns: []*query.ResultColumn{
-				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(7), Name: "shop_uuid"}}},
-				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(18), Name: "price_range"}}},
+				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(7), Name: "shop_uuid", Tok: query.IDENT}}},
+				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(18), Name: "price_range", Tok: query.IDENT}}},
 			},
 			From: pos(30),
 			Source: &query.QualifiedTableName{
-				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(35), Name: "merchant_price"}},
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(35), Name: "merchant_price", Tok: query.IDENT}},
 			},
 			Where: pos(50),
 			WhereExpr: &query.BinaryExpr{
-				X:     &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(56), Name: "sale_date"}},
+				X:     &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(56), Name: "sale_date", Tok: query.IDENT}},
 				OpPos: pos(66),
 				Op:    query.EQ,
 				Y:     &query.StringLit{ValuePos: pos(68), Value: "{{ .DSTART | Date }}"},
@@ -620,24 +620,24 @@ func TestParser_ParseStatement(t *testing.T) {
 		AssertParseStatement(t, `SELECT a, b, c, FROM price`, &query.SelectStatement{
 			Select: pos(0),
 			Columns: []*query.ResultColumn{
-				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(7), Name: "a"}}},
-				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(10), Name: "b"}}},
-				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(13), Name: "c"}}},
+				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(7), Name: "a", Tok: query.IDENT}}},
+				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(10), Name: "b", Tok: query.IDENT}}},
+				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(13), Name: "c", Tok: query.IDENT}}},
 			},
 			From: pos(16),
 			Source: &query.QualifiedTableName{
-				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(21), Name: "price"}},
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(21), Name: "price", Tok: query.IDENT}},
 			},
 		})
 		AssertParseStatement(t, `SELECT a, b FROM @price`, &query.SelectStatement{
 			Select: pos(0),
 			Columns: []*query.ResultColumn{
-				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(7), Name: "a"}}},
-				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(10), Name: "b"}}},
+				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(7), Name: "a", Tok: query.IDENT}}},
+				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(10), Name: "b", Tok: query.IDENT}}},
 			},
 			From: pos(12),
 			Source: &query.QualifiedTableName{
-				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(17), Name: "@price", Bind: true}},
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(17), Name: "@price", Tok: query.BIND}},
 			},
 		})
 
@@ -656,7 +656,7 @@ func TestParser_ParseStatement(t *testing.T) {
 			Order:   pos(24),
 			OrderBy: pos(30),
 			OrderingTerms: []*query.OrderingTerm{
-				{X: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(33), Name: "foo"}}},
+				{X: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(33), Name: "foo", Tok: query.IDENT}}},
 			},
 		})
 		AssertParseStatement(t, `SELECT * UNION ALL SELECT *`, &query.SelectStatement{
@@ -727,7 +727,7 @@ func TestParser_ParseStatement(t *testing.T) {
 			Columns: []*query.ResultColumn{
 				{
 					Expr: &query.MultiPartIdent{
-						Name: &query.Ident{NamePos: pos(7), Name: "rowid"}},
+						Name: &query.Ident{NamePos: pos(7), Name: "rowid", Tok: query.ROWID}},
 				},
 			},
 			From: pos(13),
@@ -735,16 +735,32 @@ func TestParser_ParseStatement(t *testing.T) {
 				Name: &query.MultiPartIdent{Name: &query.Ident{
 					NamePos: pos(18),
 					Name:    "foo",
+					Tok:     query.IDENT,
 				}},
 			},
 		})
-
+		AssertParseStatement(t, `SELECT * FROM {{.TASK__DESTINATION_TABLE_ID }}`, &query.SelectStatement{
+			Select: pos(0),
+			Columns: []*query.ResultColumn{
+				{
+					Star: pos(7),
+				},
+			},
+			From: pos(9),
+			Source: &query.QualifiedTableName{
+				Name: &query.MultiPartIdent{Name: &query.Ident{
+					NamePos: pos(15),
+					Name:    ".TASK__DESTINATION_TABLE_ID ",
+					Tok:     query.TMPL,
+				}},
+			},
+		})
 		AssertParseStatement(t, `SELECT rowid FROM foo ORDER BY rowid`, &query.SelectStatement{
 			Select: pos(0),
 			Columns: []*query.ResultColumn{
 				{
 					Expr: &query.MultiPartIdent{
-						Name: &query.Ident{NamePos: pos(7), Name: "rowid"}},
+						Name: &query.Ident{NamePos: pos(7), Name: "rowid", Tok: query.ROWID}},
 				},
 			},
 			From: pos(13),
@@ -752,6 +768,7 @@ func TestParser_ParseStatement(t *testing.T) {
 				Name: &query.MultiPartIdent{Name: &query.Ident{
 					NamePos: pos(18),
 					Name:    "foo",
+					Tok:     query.IDENT,
 				}},
 			},
 			Order:   pos(22),
@@ -759,7 +776,7 @@ func TestParser_ParseStatement(t *testing.T) {
 			OrderingTerms: []*query.OrderingTerm{
 				{
 					X: &query.MultiPartIdent{
-						Name: &query.Ident{NamePos: pos(31), Name: "rowid"}},
+						Name: &query.Ident{NamePos: pos(31), Name: "rowid", Tok: query.ROWID}},
 				},
 			},
 		})
@@ -769,7 +786,7 @@ func TestParser_ParseStatement(t *testing.T) {
 			Columns: []*query.ResultColumn{
 				{
 					Expr: &query.MultiPartIdent{
-						Name: &query.Ident{NamePos: pos(7), Name: "CURRENT_TIMESTAMP"}},
+						Name: &query.Ident{NamePos: pos(7), Name: "CURRENT_TIMESTAMP", Tok: query.CURRENT_TIMESTAMP}},
 				},
 			},
 			From: pos(25),
@@ -777,6 +794,7 @@ func TestParser_ParseStatement(t *testing.T) {
 				Name: &query.MultiPartIdent{Name: &query.Ident{
 					NamePos: pos(30),
 					Name:    "foo",
+					Tok:     query.IDENT,
 				}},
 			},
 		})
@@ -793,6 +811,7 @@ func TestParser_ParseStatement(t *testing.T) {
 				Name: &query.Ident{
 					NamePos: pos(14),
 					Name:    "generate_series",
+					Tok:     query.IDENT,
 				},
 				Lparen: pos(29),
 				Args: []query.Expr{

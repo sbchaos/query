@@ -38,6 +38,8 @@ type SelectStatement struct {
 	GroupByExprs []Expr // group by expression list
 	Having       Pos    // position of HAVING keyword
 	HavingExpr   Expr   // HAVING expression
+	Qualify      Pos    // position of QUALIFY keyword
+	QualifyExpr  Expr   // QUALIFY expression
 
 	Window  Pos       // position of WINDOW keyword
 	Windows []*Window // window list
@@ -72,6 +74,7 @@ func (s *SelectStatement) Clone() *SelectStatement {
 	other.WhereExpr = CloneExpr(s.WhereExpr)
 	other.GroupByExprs = cloneExprs(s.GroupByExprs)
 	other.HavingExpr = CloneExpr(s.HavingExpr)
+	other.QualifyExpr = CloneExpr(s.QualifyExpr)
 	other.Windows = cloneWindows(s.Windows)
 	other.Compound = s.Compound.Clone()
 	other.OrderingTerms = cloneOrderingTerms(s.OrderingTerms)
@@ -143,6 +146,9 @@ func (s *SelectStatement) String() string {
 			if s.HavingExpr != nil {
 				fmt.Fprintf(&buf, " HAVING %s", s.HavingExpr.String())
 			}
+		}
+		if s.QualifyExpr != nil {
+			fmt.Fprintf(&buf, " QUALIFY %s", s.HavingExpr.String())
 		}
 
 		if len(s.Windows) != 0 {

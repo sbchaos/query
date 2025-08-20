@@ -127,6 +127,14 @@ func (p *Parser) parseSelectStatement(compounded bool, withClause *WithClause) (
 			}
 		}
 
+		// Parse optional QUALIFY clause
+		if p.peek() == QUALIFY {
+			stmt.Qualify, _, _ = p.scan()
+			if stmt.QualifyExpr, err = p.ParseExpr(); err != nil {
+				return &stmt, err
+			}
+		}
+
 		// Parse WINDOW clause.
 		if p.peek() == WINDOW {
 			stmt.Window, _, _ = p.scan()
@@ -347,8 +355,8 @@ func (p *Parser) parseUnarySource() (source Source, err error) {
 	switch p.peek() {
 	case LP:
 		return p.parseParenSource()
-	case IDENT, QIDENT, TSTRING, BIND:
-		return p.parseQualifiedTable(true, true, true, true)
+	case IDENT, QIDENT, TSTRING, BIND, TMPL:
+		return p.parseQualifiedTable(true, true)
 	case VALUES:
 		return p.parseSelectStatement(false, nil)
 	default:
@@ -491,7 +499,7 @@ func (p *Parser) parseParenSource() (_ *ParenSource, err error) {
 	return &source, nil
 }
 
-func (p *Parser) parseQualifiedTable(projectOK, schemaOK, aliasOK, indexedOK bool) (_ Source, err error) {
+func (p *Parser) parseQualifiedTable(aliasOK, indexedOK bool) (_ Source, err error) {
 	if !isIdentToken(p.peek()) {
 		return nil, p.errorExpected(p.pos, p.tok, "table name")
 	}
@@ -499,10 +507,10 @@ func (p *Parser) parseQualifiedTable(projectOK, schemaOK, aliasOK, indexedOK boo
 	if p.peek() == LP {
 		return p.parseQualifiedTableFunctionName(ident)
 	}
-	return p.parseQualifiedTableName(ident, projectOK, schemaOK, aliasOK, indexedOK)
+	return p.parseQualifiedTableName(ident, aliasOK, indexedOK)
 }
 
-func (p *Parser) parseQualifiedTableName(ident *Ident, projectOK, schemaOK, aliasOK, indexedOK bool) (_ *QualifiedTableName, err error) {
+func (p *Parser) parseQualifiedTableName(ident *Ident, aliasOK, indexedOK bool) (_ *QualifiedTableName, err error) {
 	var tbl QualifiedTableName
 	mIdent, dotPos := p.parseMultiIdent(ident)
 	if dotPos.IsValid() {
@@ -671,7 +679,7 @@ func (p *Parser) parseOverClause() (_ *OverClause, err error) {
 	// If specifying a window name, read it and exit.
 	if isIdentToken(p.peek()) {
 		pos, tok, lit := p.scan()
-		clause.Name = &Ident{Name: lit, NamePos: pos, Quote: quoteRune(tok)}
+		clause.Name = &Ident{Name: lit, NamePos: pos, Tok: tok}
 		return &clause, nil
 	}
 
@@ -693,7 +701,7 @@ func (p *Parser) parseWindowDefinition() (_ *WindowDefinition, err error) {
 	// Read base window name.
 	if isIdentToken(p.peek()) {
 		pos, tok, lit := p.scan()
-		def.Base = &Ident{Name: lit, NamePos: pos, Quote: quoteRune(tok)}
+		def.Base = &Ident{Name: lit, NamePos: pos, Tok: tok}
 	}
 
 	// Parse "PARTITION BY expr, expr..."

@@ -495,8 +495,7 @@ func MIdentName(ident *MultiPartIdent) string {
 type Ident struct {
 	NamePos Pos    // identifier position
 	Name    string // identifier name
-	Quote   rune   // type of quote
-	Bind    bool   // If this is a bind identifier
+	Tok     Token  // Token type - BIND, IDENT, TMPL
 }
 
 // Clone returns a deep copy of i.
@@ -521,11 +520,20 @@ func cloneIdents(a []*Ident) []*Ident {
 
 // String returns the string representation of the expression.
 func (i *Ident) String() string {
-	if i.Quote == 0 {
+	switch i.Tok {
+	case IDENT, BIND:
+		return i.Name
+	case QIDENT:
+		return `"` + i.Name + `"`
+	case STRING:
+		return "'" + i.Name + "'"
+	case TSTRING:
+		return "`" + i.Name + "`"
+	case TMPL:
+		return `{{ ` + i.Name + ` }}`
+	default:
 		return i.Name
 	}
-
-	return string(i.Quote) + i.Name + string(i.Quote)
 }
 
 // IdentName returns the name of ident. Returns a blank string if ident is nil.

@@ -196,6 +196,7 @@ const (
 	PRAGMA
 	PRECEDING
 	PRIMARY
+	QUALIFY
 	RAISE
 	RANGE
 	RECURSIVE
@@ -406,6 +407,7 @@ var tokens = [...]string{
 	PRAGMA:            "PRAGMA",
 	PRECEDING:         "PRECEDING",
 	PRIMARY:           "PRIMARY",
+	QUALIFY:           "QUALIFY",
 	RAISE:             "RAISE",
 	RANGE:             "RANGE",
 	RECURSIVE:         "RECURSIVE",
@@ -509,7 +511,7 @@ func (t Token) IsBinaryOp() bool {
 }
 
 func isIdentToken(tok Token) bool {
-	return tok == IDENT || tok == QIDENT || tok == TSTRING || tok == BIND
+	return tok == IDENT || tok == QIDENT || tok == TSTRING || tok == BIND || tok == TMPL
 }
 
 // isExprIdentToken returns true if tok can be used as an identifier in an expression.
