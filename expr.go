@@ -25,6 +25,7 @@ func (*ExprList) node()       {}
 func (*Ident) node()          {}
 func (*MultiPartIdent) node() {}
 func (*ParenExpr) node()      {}
+func (*Range) node()          {}
 func (*QualifiedRef) node()   {}
 func (*UnaryExpr) node()      {}
 func (SelectExpr) node()      {}
@@ -39,6 +40,7 @@ func (*ExprList) expr()       {}
 func (*Ident) expr()          {}
 func (*MultiPartIdent) expr() {}
 func (*ParenExpr) expr()      {}
+func (*Range) expr()          {}
 func (*QualifiedRef) expr()   {}
 func (*UnaryExpr) expr()      {}
 func (SelectExpr) expr()      {}
@@ -75,6 +77,8 @@ func CloneExpr(expr Expr) Expr {
 	case *NumberLit:
 		return expr.Clone()
 	case *ParenExpr:
+		return expr.Clone()
+	case *Range:
 		return expr.Clone()
 	case *QualifiedRef:
 		return expr.Clone()
@@ -480,6 +484,14 @@ func (m *MultiPartIdent) String() string {
 	return buf.String()
 }
 
+// MIdentName returns the name of ident. Returns a blank string if ident is nil.
+func MIdentName(ident *MultiPartIdent) string {
+	if ident == nil {
+		return ""
+	}
+	return ident.String()
+}
+
 type Ident struct {
 	NamePos Pos    // identifier position
 	Name    string // identifier name
@@ -543,6 +555,28 @@ func (expr *ParenExpr) Clone() *ParenExpr {
 // String returns the string representation of the expression.
 func (expr *ParenExpr) String() string {
 	return fmt.Sprintf("(%s)", expr.X.String())
+}
+
+type Range struct {
+	X   Expr // lhs expression
+	And Pos  // position of AND keyword
+	Y   Expr // rhs expression
+}
+
+// Clone returns a deep copy of r.
+func (r *Range) Clone() *Range {
+	if r == nil {
+		return nil
+	}
+	other := *r
+	other.X = CloneExpr(r.X)
+	other.Y = CloneExpr(r.Y)
+	return &other
+}
+
+// String returns the string representation of the expression.
+func (r *Range) String() string {
+	return fmt.Sprintf("%s AND %s", r.X.String(), r.Y.String())
 }
 
 type QualifiedRef struct {

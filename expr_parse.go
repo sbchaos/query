@@ -182,14 +182,31 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 		return &UnaryExpr{OpPos: pos, Op: tok, X: expr}, nil
 	case tok == WITH:
 		p.unscan()
-		selectStmt, err := p.parseWithStatement(false)
-		return SelectExpr{selectStmt}, err
+		return p.parseWithExpr()
 	case tok == SELECT:
 		p.unscan()
 		selectStmt, err := p.parseSelectStatement(false, nil)
 		return SelectExpr{selectStmt}, err
 	default:
 		return nil, p.errorExpected(p.pos, p.tok, "expression")
+	}
+}
+
+func (p *Parser) parseWithExpr() (*SelectExpr, error) {
+	withClause, err := p.parseWithClause()
+	if err != nil {
+		return nil, err
+	}
+
+	switch p.peek() {
+	case SELECT, VALUES:
+		selectStmt, err := p.parseSelectStatement(false, withClause)
+		if err != nil {
+			return nil, err
+		}
+		return &SelectExpr{selectStmt}, nil
+	default:
+		return nil, p.errorExpected(p.pos, p.tok, "SELECT after With")
 	}
 }
 
@@ -293,7 +310,7 @@ func (p *Parser) parseBinaryExpr(prec1 int) (expr Expr, err error) {
 					X:     x,
 					OpPos: pos,
 					Op:    op,
-					//Y:     &Range{X: rng.X, And: rng.OpPos, Y: rng.Y},
+					Y:     &Range{X: rng.X, And: rng.OpPos, Y: rng.Y},
 				}
 			}
 

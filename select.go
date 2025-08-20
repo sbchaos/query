@@ -12,37 +12,14 @@ func (*QualifiedTableFunctionName) node() {}
 func (*SelectStatement) node()            {}
 func (*OnConstraint) node()               {}
 func (*UsingConstraint) node()            {}
-func (*SetStatement) node()               {}
-func (*DeclarationStatement) node()       {}
 
-type Statement interface {
-	Node
-	stmt()
-}
-
-func (*SelectStatement) stmt()      {}
-func (*SetStatement) stmt()         {}
-func (*DeclarationStatement) stmt() {}
-
-// CloneStatement returns a deep copy stmt.
-func CloneStatement(stmt Statement) Statement {
-	if stmt == nil {
-		return nil
-	}
-
-	switch stmt := stmt.(type) {
-	case *SelectStatement:
-		return stmt.Clone()
-	default:
-		panic(fmt.Sprintf("invalid statement type: %T", stmt))
-	}
-}
+func (*SelectStatement) stmt() {}
 
 type SelectStatement struct {
 	WithClause *WithClause // clause containing CTEs
 
 	Values     Pos         // position of VALUES keyword
-	ValueLists []*ExprList // lists of lists of values
+	ValueLists []*ExprList // lists of values
 
 	Select   Pos             // position of SELECT keyword
 	Distinct Pos             // position of DISTINCT keyword
@@ -453,11 +430,7 @@ func ResolveSource(root Source, name string) Source {
 }
 
 type QualifiedTableName struct {
-	Project    *Ident // project name
-	Dot1       Pos    // dot after project
-	Schema     *Ident // schema name
-	Dot        Pos    // position of dot
-	Name       *Ident // table name
+	Name       *MultiPartIdent
 	As         Pos    // position of AS keyword
 	Alias      *Ident // optional table alias
 	Indexed    Pos    // position of INDEXED keyword
@@ -473,7 +446,7 @@ func (n *QualifiedTableName) TableName() string {
 	if s := IdentName(n.Alias); s != "" {
 		return s
 	}
-	return IdentName(n.Name)
+	return MIdentName(n.Name)
 }
 
 // Clone returns a deep copy of n.
@@ -482,8 +455,6 @@ func (n *QualifiedTableName) Clone() *QualifiedTableName {
 		return nil
 	}
 	other := *n
-	other.Project = n.Project.Clone()
-	other.Schema = n.Schema.Clone()
 	other.Name = n.Name.Clone()
 	other.Alias = n.Alias.Clone()
 	other.Index = n.Index.Clone()
@@ -493,14 +464,6 @@ func (n *QualifiedTableName) Clone() *QualifiedTableName {
 // String returns the string representation of the table name.
 func (n *QualifiedTableName) String() string {
 	var buf bytes.Buffer
-	if n.Project != nil {
-		buf.WriteString(n.Project.String())
-		buf.WriteString(".")
-	}
-	if n.Schema != nil {
-		buf.WriteString(n.Schema.String())
-		buf.WriteString(".")
-	}
 	buf.WriteString(n.Name.String())
 	if n.Alias != nil {
 		fmt.Fprintf(&buf, " AS %s", n.Alias.String())
@@ -990,52 +953,4 @@ func (d *WindowDefinition) String() string {
 	buf.WriteString(")")
 
 	return buf.String()
-}
-
-type SetStatement struct {
-	Set   Pos
-	Key   string
-	Equal Pos
-	Value string
-}
-
-func (s *SetStatement) Clone() *SetStatement {
-	if s == nil {
-		return nil
-	}
-	other := *s
-	other.Key = s.Key
-	other.Value = s.Value
-	return &other
-}
-
-func (s *SetStatement) String() string {
-	return fmt.Sprintf("SET %s=%s", s.Key, s.Value)
-}
-
-type DeclarationStatement struct {
-	Name  *Ident
-	Value Expr
-	Type  Expr
-}
-
-func (s *DeclarationStatement) Clone() *DeclarationStatement {
-	if s == nil {
-		return nil
-	}
-	other := *s
-	other.Name = s.Name.Clone()
-	other.Value = CloneExpr(s.Value)
-	other.Type = CloneExpr(s.Type)
-	return &other
-}
-
-func (s *DeclarationStatement) String() string {
-	if s.Value != nil {
-		if s.Type != nil {
-			return fmt.Sprintf("%s := %s %s", s.Name, s.Type.String(), s.Value.String())
-		}
-		return fmt.Sprintf("%s := %s", s.Name, s.Value.String())
-	}
-	return fmt.Sprintf("%s %s", s.Name, s.Type.String())
 }

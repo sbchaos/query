@@ -1,58 +1,5 @@
 package query
 
-import (
-	"io"
-)
-
-func (p *Parser) ParseStatements() ([]Statement, error) {
-	var stmts []Statement
-	for {
-		stmt, err := p.ParseStatement()
-		if err != nil {
-			if err == io.EOF {
-				return stmts, nil
-			}
-			return nil, err
-		}
-		stmts = append(stmts, stmt)
-	}
-}
-
-func (p *Parser) ParseStatement() (stmt Statement, err error) {
-	switch tok := p.peek(); tok {
-	case EOF:
-		return nil, io.EOF
-	default:
-		if stmt, err = p.parseNonExplainStatement(); err != nil {
-			return stmt, err
-		}
-	}
-
-	// Read trailing semicolon or end of file.
-	if tok := p.peek(); tok != EOF && tok != SEMI {
-		return stmt, p.errorExpected(p.pos, p.tok, "semicolon or EOF")
-	}
-	p.scan()
-
-	return stmt, nil
-}
-
-// parseStmt parses all statement types.
-func (p *Parser) parseNonExplainStatement() (Statement, error) {
-	switch p.peek() {
-	case BIND:
-		return p.parseDeclarationStatement()
-	case SET:
-		return p.parseSetStatement()
-	case SELECT, VALUES:
-		return p.parseSelectStatement(false, nil)
-	case WITH:
-		return p.parseWithStatement(false)
-	default:
-		return nil, p.errorExpected(p.pos, p.tok, "statement")
-	}
-}
-
 // parseSelectStatement parses a SELECT statement.
 // If compounded is true, WITH, ORDER BY, & LIMIT/OFFSET are skipped.
 func (p *Parser) parseSelectStatement(compounded bool, withClause *WithClause) (_ *SelectStatement, err error) {
@@ -507,17 +454,21 @@ func (p *Parser) parseParenSource() (_ *ParenSource, err error) {
 	var source ParenSource
 	source.Lparen, _, _ = p.scan()
 
+	var withClause *WithClause
 	if p.peek() == WITH {
-		sel, err := p.parseWithStatement(false)
+		withClause, err = p.parseWithClause()
 		if err != nil {
-			return &source, err
+			return nil, err
 		}
-		source.X = sel
-	} else if p.peek() == SELECT {
-		if source.X, err = p.parseSelectStatement(false, nil); err != nil {
+	}
+	if p.peek() == SELECT {
+		if source.X, err = p.parseSelectStatement(false, withClause); err != nil {
 			return &source, err
 		}
 	} else {
+		if withClause != nil {
+			return &source, p.errorExpected(p.pos, p.tok, "suspicious with clause")
+		}
 		if source.X, err = p.parseSource(); err != nil {
 			return &source, err
 		}
@@ -553,37 +504,11 @@ func (p *Parser) parseQualifiedTable(projectOK, schemaOK, aliasOK, indexedOK boo
 
 func (p *Parser) parseQualifiedTableName(ident *Ident, projectOK, schemaOK, aliasOK, indexedOK bool) (_ *QualifiedTableName, err error) {
 	var tbl QualifiedTableName
-
-	if tok := p.peek(); tok == DOT {
-		if !schemaOK && !projectOK {
-			return &tbl, p.errorExpected(p.pos, p.tok, "unqualified table name")
-		}
-
-		dot1, _, _ := p.scan()
-		var ident1 *Ident
-		if ident1, err = p.parseIdent("table name"); err != nil {
-			return &tbl, err
-		}
-		if tok1 := p.peek(); tok1 == DOT {
-			dot2, _, _ := p.scan()
-			var ident2 *Ident
-			if ident2, err = p.parseIdent("table name"); err != nil {
-				return &tbl, err
-			}
-
-			tbl.Name = ident2
-			tbl.Dot1 = dot1
-			tbl.Schema = ident1
-			tbl.Dot = dot2
-			tbl.Project = ident
-		} else {
-			tbl.Schema = ident
-			tbl.Dot = dot1
-			tbl.Name = ident1
-		}
-	} else {
-		tbl.Name = ident
+	mIdent, dotPos := p.parseMultiIdent(ident)
+	if dotPos.IsValid() {
+		return nil, &Error{Pos: p.pos, Msg: "Found extra . in input"}
 	}
+	tbl.Name = mIdent
 
 	// Parse optional table alias ("AS alias" or just "alias").
 	if tok := p.peek(); tok == AS || isIdentToken(tok) {
@@ -826,7 +751,7 @@ func (p *Parser) parseWindowDefinition() (_ *WindowDefinition, err error) {
 
 // parseWithStatement is called only from parseNonExplainStatement as we don't
 // know what kind of statement we'll have after the CTEs (e.g. SELECT, INSERT, etc).
-func (p *Parser) parseWithStatement(inTrigger bool) (*SelectStatement, error) {
+func (p *Parser) parseWithStatement() (Statement, error) {
 	withClause, err := p.parseWithClause()
 	if err != nil {
 		return nil, err
@@ -835,70 +760,13 @@ func (p *Parser) parseWithStatement(inTrigger bool) (*SelectStatement, error) {
 	switch p.peek() {
 	case SELECT, VALUES:
 		return p.parseSelectStatement(false, withClause)
+	case INSERT, REPLACE:
+		return p.parseInsertStatement(withClause)
+	case DELETE:
+		return p.parseDeleteStatement(withClause)
 	default:
 		return nil, p.errorExpected(p.pos, p.tok, "SELECT, VALUES, INSERT, REPLACE, UPDATE, or DELETE")
 	}
-}
-
-func (p *Parser) parseDeclarationStatement() (Statement, error) {
-	pos, tok, val := p.scan()
-	n1 := &Ident{Name: val, NamePos: pos, Bind: tok == BIND}
-	var t1 Expr
-	var v1 Expr
-
-	if p.peek() == ASSIGN { // should be :=
-		p.scan()
-
-		expr, err := p.ParseExpr()
-		if err != nil {
-			return nil, err
-		}
-
-		if p.peek() != SEMI {
-			expr2, err := p.ParseExpr()
-			if err != nil {
-				return nil, err
-			}
-			t1 = expr
-			v1 = expr2
-		} else {
-			v1 = expr
-		}
-	} else {
-		expr, err := p.ParseExpr()
-		if err != nil {
-			return nil, err
-		}
-		t1 = expr
-	}
-
-	return &DeclarationStatement{Name: n1, Type: t1, Value: v1}, nil
-}
-
-func (p *Parser) parseSetStatement() (Statement, error) {
-	assert(p.peek() == SET)
-	var set SetStatement
-
-	set.Set, _, _ = p.scan()
-	key := ""
-	for {
-		_, tok, val := p.scan()
-		if tok == IDENT {
-			key += val
-		} else if tok == DOT {
-			key += "."
-		}
-
-		if p.peek() == EQ {
-			break
-		}
-	}
-	set.Key = key
-	set.Equal, _, _ = p.scan()
-	_, _, val := p.scan()
-	set.Value = val
-
-	return &set, nil
 }
 
 func isTypeName(s string) bool {

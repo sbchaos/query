@@ -354,6 +354,24 @@ func TestParser_ParseExpr(t *testing.T) {
 		AssertParseExprError(t, `1 IN 2`, `1:6: expected left paren, found 2`)
 		AssertParseExprError(t, `1 IN (`, `1:6: expected expression, found 'EOF'`)
 		AssertParseExprError(t, `1 IN (2 3`, `1:9: expected comma or right paren, found 3`)
+		AssertParseExpr(t, `1 BETWEEN 2 AND 3'`, &query.BinaryExpr{
+			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
+			OpPos: pos(2), Op: query.BETWEEN,
+			Y: &query.Range{
+				X:   &query.NumberLit{ValuePos: pos(10), Value: "2"},
+				And: pos(12),
+				Y:   &query.NumberLit{ValuePos: pos(16), Value: "3"},
+			},
+		})
+		AssertParseExpr(t, `1 NOT BETWEEN 2 AND 3'`, &query.BinaryExpr{
+			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
+			OpPos: pos(2), Op: query.NOTBETWEEN,
+			Y: &query.Range{
+				X:   &query.NumberLit{ValuePos: pos(14), Value: "2"},
+				And: pos(16),
+				Y:   &query.NumberLit{ValuePos: pos(20), Value: "3"},
+			},
+		})
 		AssertParseExpr(t, `1 -> 2`, &query.BinaryExpr{
 			X:     &query.NumberLit{ValuePos: pos(0), Value: "1"},
 			OpPos: pos(2), Op: query.JSON_EXTRACT_JSON,
