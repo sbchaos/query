@@ -345,10 +345,11 @@ func (p *Parser) parseExprList() (_ *ExprList, err error) {
 	return &list, nil
 }
 
-func (p *Parser) parseCall(name *MultiPartIdent) (_ *Call, err error) {
+func (p *Parser) parseCall(name *MultiPartIdent) (*Call, error) {
 	assert(p.peek() == LP)
 
 	var expr Call
+	var err error
 	expr.Name = name
 	expr.Lparen, _, _ = p.scan()
 
@@ -360,10 +361,31 @@ func (p *Parser) parseCall(name *MultiPartIdent) (_ *Call, err error) {
 			expr.Distinct, _, _ = p.scan()
 		}
 		for p.peek() != RP {
+			// Special case [Day | Month | Year] From
+			strName := ""
+			_, tok1, lit := p.peekScan()
+			if tok1 == IDENT && (lit == "DAY" || lit == "MONTH" || lit == "YEAR") {
+				p.scan()
+				strName = lit
+				if p.peek() != FROM {
+					return nil, p.errorExpected(p.pos, p.tok, "FROM")
+				}
+				p.scan()
+				strName = strName + " FROM "
+			}
+
 			arg, err := p.ParseExpr()
 			if err != nil {
 				return &expr, err
 			}
+			if strName != "" {
+				c1, ok := arg.(*Call)
+				if ok {
+					c1.Name.Name.Name = strName + c1.Name.Name.Name
+				}
+				arg = c1
+			}
+
 			expr.Args = append(expr.Args, arg)
 
 			if tok := p.peek(); tok == COMMA {

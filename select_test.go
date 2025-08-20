@@ -162,6 +162,39 @@ func TestParser_ParseStatement(t *testing.T) {
 				Alias: &query.Ident{NamePos: pos(21), Name: "tbl2", Tok: query.IDENT},
 			},
 		})
+		AssertParseStatement(t, `SELECT name, 'm' AS period_type, EXTRACT(DAY FROM LAST_DAY(purchase_date)) AS day_count FROM @monthly`, &query.SelectStatement{
+			Select: pos(0),
+			Columns: []*query.ResultColumn{
+				{Expr: &query.MultiPartIdent{
+					Name: &query.Ident{NamePos: pos(7), Name: "name", Tok: query.IDENT},
+				}},
+				{Expr: &query.StringLit{ValuePos: pos(13), Value: "m"},
+					As:    pos(17),
+					Alias: &query.Ident{NamePos: pos(20), Name: "period_type", Tok: query.IDENT}},
+				{Expr: &query.Call{
+					Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(33), Name: "EXTRACT", Tok: query.IDENT}},
+					Lparen: pos(40),
+					Rparen: pos(73),
+					Args: []query.Expr{
+						&query.Call{
+							Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(50), Name: "DAY FROM LAST_DAY", Tok: query.IDENT}},
+							Lparen: pos(58),
+							Rparen: pos(72),
+							Args: []query.Expr{
+								&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(59), Name: "purchase_date", Tok: query.IDENT}},
+							},
+						},
+					},
+				},
+					As:    pos(75),
+					Alias: &query.Ident{NamePos: pos(78), Name: "day_count", Tok: query.IDENT},
+				},
+			},
+			From: pos(88),
+			Source: &query.QualifiedTableName{
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(93), Name: "@monthly", Tok: query.BIND}},
+			},
+		})
 		AssertParseStatement(t, `SELECT * FROM main.tbl AS tbl2`, &query.SelectStatement{
 			Select: pos(0),
 			Columns: []*query.ResultColumn{
