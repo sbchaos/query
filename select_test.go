@@ -177,7 +177,7 @@ func TestParser_ParseStatement(t *testing.T) {
 					Rparen: pos(73),
 					Args: []query.Expr{
 						&query.Call{
-							Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(50), Name: "DAY FROM LAST_DAY", Tok: query.IDENT}},
+							Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(41), Name: "DAY FROM LAST_DAY", Tok: query.IDENT}},
 							Lparen: pos(58),
 							Rparen: pos(72),
 							Args: []query.Expr{

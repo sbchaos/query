@@ -93,6 +93,31 @@ func TestParser_ParseStatement2(t *testing.T) {
 				},
 			},
 		})
+		AssertParseStatement(t, `@end_ts := TIMESTAMP(@end_date) + INTERVAL 17 HOUR - INTERVAL 1 SECOND;`, &query.DeclarationStatement{
+			Name: &query.Ident{Name: "@end_ts", NamePos: pos(0), Tok: query.BIND},
+			Value: &query.BinaryExpr{
+				X: &query.BinaryExpr{
+					X: &query.Call{
+						Name: &query.MultiPartIdent{Name: &query.Ident{
+							NamePos: pos(11),
+							Name:    "TIMESTAMP",
+							Tok:     query.IDENT,
+						}},
+						Lparen: pos(20),
+						Args: []query.Expr{
+							&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(21), Name: "@end_date", Tok: query.BIND}},
+						},
+						Rparen: pos(30),
+					},
+					OpPos: pos(32),
+					Op:    query.PLUS,
+					Y:     &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(34), Name: "INTERVAL 17 HOUR", Tok: query.IDENT}},
+				},
+				OpPos: pos(51),
+				Op:    query.MINUS,
+				Y:     &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(53), Name: "INTERVAL 1 SECOND", Tok: query.IDENT}},
+			},
+		})
 	})
 
 	t.Run("Insert", func(t *testing.T) {

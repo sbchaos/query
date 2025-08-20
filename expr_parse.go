@@ -137,7 +137,10 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 	pos, tok, lit := p.scan()
 	switch {
 	case isExprIdentToken(tok):
-		ident := &Ident{Name: lit, NamePos: pos, Tok: tok}
+		ident, err := p.handleSpecialCases(pos, tok, lit)
+		if err != nil {
+			ident = &Ident{Name: lit, NamePos: pos, Tok: tok}
+		}
 		return p.parseIdentifier(ident)
 	case tok == STRING:
 		return &StringLit{ValuePos: pos, Value: lit}, nil
@@ -184,6 +187,40 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 	default:
 		return nil, p.errorExpected(p.pos, p.tok, "expression")
 	}
+}
+
+func (p *Parser) handleSpecialCases(pos Pos, tok Token, lit string) (*Ident, error) {
+	if tok == IDENT && (lit == "DAY" || lit == "MONTH" || lit == "YEAR") {
+		strName := lit
+		if p.peek() != FROM {
+			return nil, p.errorExpected(p.pos, p.tok, "FROM")
+		}
+		p.scan()
+		strName = strName + " FROM "
+
+		_, t1, lit1 := p.scan()
+		if t1 == IDENT {
+			strName += lit1
+		}
+		if p.peek() == LP {
+			return &Ident{Name: strName, NamePos: pos, Tok: tok}, nil
+		}
+	}
+
+	if tok == IDENT && lit == "INTERVAL" {
+		strName := lit
+		if p.peek() != INTEGER {
+			return nil, p.errorExpected(p.pos, p.tok, "integer")
+		}
+		_, _, lit2 := p.scan()
+		strName = strName + " " + lit2
+
+		_, _, lit3 := p.scan()
+		strName = strName + " " + lit3
+		return &Ident{Name: strName, NamePos: pos, Tok: tok}, nil
+	}
+
+	return nil, &Error{Pos: pos}
 }
 
 func (p *Parser) parseWithExpr() (*SelectExpr, error) {
@@ -361,29 +398,9 @@ func (p *Parser) parseCall(name *MultiPartIdent) (*Call, error) {
 			expr.Distinct, _, _ = p.scan()
 		}
 		for p.peek() != RP {
-			// Special case [Day | Month | Year] From
-			strName := ""
-			_, tok1, lit := p.peekScan()
-			if tok1 == IDENT && (lit == "DAY" || lit == "MONTH" || lit == "YEAR") {
-				p.scan()
-				strName = lit
-				if p.peek() != FROM {
-					return nil, p.errorExpected(p.pos, p.tok, "FROM")
-				}
-				p.scan()
-				strName = strName + " FROM "
-			}
-
 			arg, err := p.ParseExpr()
 			if err != nil {
 				return &expr, err
-			}
-			if strName != "" {
-				c1, ok := arg.(*Call)
-				if ok {
-					c1.Name.Name.Name = strName + c1.Name.Name.Name
-				}
-				arg = c1
 			}
 
 			expr.Args = append(expr.Args, arg)
