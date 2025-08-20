@@ -85,15 +85,10 @@ func (s *DeclarationStatement) String() string {
 type InsertStatement struct {
 	WithClause *WithClause // clause containing CTEs
 
-	Insert           Pos // position of INSERT keyword
-	Replace          Pos // position of REPLACE keyword
-	InsertOr         Pos // position of OR keyword after INSERT
-	InsertOrReplace  Pos // position of REPLACE keyword after INSERT OR
-	InsertOrRollback Pos // position of ROLLBACK keyword after INSERT OR
-	InsertOrAbort    Pos // position of ABORT keyword after INSERT OR
-	InsertOrFail     Pos // position of FAIL keyword after INSERT OR
-	InsertOrIgnore   Pos // position of IGNORE keyword after INSERT OR
-	Into             Pos // position of INTO keyword
+	Insert    Pos // position of INSERT keyword
+	Replace   Pos // position of REPLACE keyword
+	Into      Pos // position of INTO keyword
+	Overwrite Pos // positon of OVERWRITE keyword
 
 	Table *Ident // table name
 	As    Pos    // position of AS keyword
@@ -144,17 +139,6 @@ func (s *InsertStatement) String() string {
 		buf.WriteString("REPLACE")
 	} else {
 		buf.WriteString("INSERT")
-		if s.InsertOrReplace.IsValid() {
-			buf.WriteString(" OR REPLACE")
-		} else if s.InsertOrRollback.IsValid() {
-			buf.WriteString(" OR ROLLBACK")
-		} else if s.InsertOrAbort.IsValid() {
-			buf.WriteString(" OR ABORT")
-		} else if s.InsertOrFail.IsValid() {
-			buf.WriteString(" OR FAIL")
-		} else if s.InsertOrIgnore.IsValid() {
-			buf.WriteString(" OR IGNORE")
-		}
 	}
 
 	fmt.Fprintf(&buf, " INTO %s", s.Table.String())

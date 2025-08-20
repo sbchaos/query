@@ -134,33 +134,17 @@ func (p *Parser) parseInsertStatement(withClause *WithClause) (_ *InsertStatemen
 
 	if p.peek() == INSERT {
 		stmt.Insert, _, _ = p.scan()
-
-		if p.peek() == OR {
-			stmt.InsertOr, _, _ = p.scan()
-
-			switch p.peek() {
-			case ROLLBACK:
-				stmt.InsertOrRollback, _, _ = p.scan()
-			case REPLACE:
-				stmt.InsertOrReplace, _, _ = p.scan()
-			case ABORT:
-				stmt.InsertOrAbort, _, _ = p.scan()
-			case FAIL:
-				stmt.InsertOrFail, _, _ = p.scan()
-			case IGNORE:
-				stmt.InsertOrIgnore, _, _ = p.scan()
-			default:
-				return &stmt, p.errorExpected(p.pos, p.tok, "ROLLBACK, REPLACE, ABORT, FAIL, or IGNORE")
-			}
-		}
 	} else {
 		stmt.Replace, _, _ = p.scan()
 	}
 
-	if p.peek() != INTO {
-		return &stmt, p.errorExpected(p.pos, p.tok, "INTO")
+	if p.peek() == INTO {
+		stmt.Into, _, _ = p.scan()
+	} else if p.peek() == OVERWRITE {
+		stmt.Overwrite, _, _ = p.scan()
+	} else {
+		return &stmt, p.errorExpected(p.pos, p.tok, "INTO or OVERWRITE")
 	}
-	stmt.Into, _, _ = p.scan()
 
 	// Parse table name & optional alias.
 	if stmt.Table, err = p.parseIdent("table name"); err != nil {

@@ -80,7 +80,6 @@ const (
 	operator_end
 
 	keyword_beg
-	ABORT
 	ACTION
 	ADD
 	AFTER
@@ -135,7 +134,6 @@ const (
 	EXCLUSIVE
 	EXISTS
 	EXPLAIN
-	FAIL
 	FILTER
 	FIRST
 	FOLLOWING
@@ -151,7 +149,6 @@ const (
 	HAVING
 	IF
 	IF_NULL_ROW
-	IGNORE
 	IMMEDIATE
 	IN
 	INDEX
@@ -193,12 +190,12 @@ const (
 	OTHERS
 	OUTER
 	OVER
+	OVERWRITE
 	PARTITION
 	PLAN
 	PRAGMA
 	PRECEDING
 	PRIMARY
-	QUERY
 	RAISE
 	RANGE
 	RECURSIVE
@@ -211,7 +208,6 @@ const (
 	REPLACE
 	RESTRICT
 	RETURNING
-	ROLLBACK
 	ROW
 	ROWID
 	ROWS
@@ -294,7 +290,6 @@ var tokens = [...]string{
 	DOT:    ".",
 	ASSIGN: ":=",
 
-	ABORT:             "ABORT",
 	ACTION:            "ACTION",
 	ADD:               "ADD",
 	AFTER:             "AFTER",
@@ -349,7 +344,6 @@ var tokens = [...]string{
 	EXCLUSIVE:         "EXCLUSIVE",
 	EXISTS:            "EXISTS",
 	EXPLAIN:           "EXPLAIN",
-	FAIL:              "FAIL",
 	FILTER:            "FILTER",
 	FIRST:             "FIRST",
 	FOLLOWING:         "FOLLOWING",
@@ -365,7 +359,6 @@ var tokens = [...]string{
 	HAVING:            "HAVING",
 	IF:                "IF",
 	IF_NULL_ROW:       "IF_NULL_ROW",
-	IGNORE:            "IGNORE",
 	IMMEDIATE:         "IMMEDIATE",
 	IN:                "IN",
 	INDEX:             "INDEX",
@@ -407,12 +400,12 @@ var tokens = [...]string{
 	OTHERS:            "OTHERS",
 	OUTER:             "OUTER",
 	OVER:              "OVER",
+	OVERWRITE:         "OVERWRITE",
 	PARTITION:         "PARTITION",
 	PLAN:              "PLAN",
 	PRAGMA:            "PRAGMA",
 	PRECEDING:         "PRECEDING",
 	PRIMARY:           "PRIMARY",
-	QUERY:             "QUERY",
 	RAISE:             "RAISE",
 	RANGE:             "RANGE",
 	RECURSIVE:         "RECURSIVE",
@@ -425,7 +418,6 @@ var tokens = [...]string{
 	REPLACE:           "REPLACE",
 	RESTRICT:          "RESTRICT",
 	RETURNING:         "RETURNING",
-	ROLLBACK:          "ROLLBACK",
 	ROW:               "ROW",
 	ROWID:             "ROWID",
 	ROWS:              "ROWS",
@@ -464,15 +456,15 @@ var tokens = [...]string{
 
 // A list of keywords that can be used as unquoted identifiers.
 var bareTokens = [...]Token{
-	ABORT, ACTION, AFTER, ALWAYS, ANALYZE, ASC, ATTACH, BEFORE, BEGIN, BY,
+	ACTION, AFTER, ALWAYS, ANALYZE, ASC, ATTACH, BEFORE, BEGIN, BY,
 	CASCADE, CAST, COLUMN, CONFLICT, CROSS, CURRENT, CURRENT_DATE,
 	CURRENT_TIME, CURRENT_TIMESTAMP, DATABASE, DEFERRED, DESC, DETACH, DO,
-	EACH, END, EXCLUDE, EXCLUSIVE, EXPLAIN, FAIL, FILTER, FIRST, FOLLOWING,
-	FOR, FULL, GENERATED, GLOB, GROUPS, IF, IGNORE, IMMEDIATE, INDEXED, INITIALLY,
+	EACH, END, EXCLUDE, EXCLUSIVE, EXPLAIN, FILTER, FIRST, FOLLOWING,
+	FOR, FULL, GENERATED, GLOB, GROUPS, IF, IMMEDIATE, INDEXED, INITIALLY,
 	INNER, INSTEAD, KEY, LAST, LEFT, LIKE, MATCH, NATURAL, NO, NULLS, OF,
-	OFFSET, OTHERS, OUTER, OVER, PARTITION, PLAN, PRAGMA, PRECEDING, QUERY,
+	OFFSET, OTHERS, OUTER, OVER, PARTITION, PLAN, PRAGMA, PRECEDING,
 	RAISE, RANGE, RECURSIVE, REGEXP, REINDEX, RELEASE, RENAME, REPLACE,
-	RESTRICT, ROLLBACK, ROW, ROWS, SAVEPOINT, TEMP, TIES, TRIGGER,
+	RESTRICT, ROW, ROWS, SAVEPOINT, TEMP, TIES, TRIGGER,
 	UNBOUNDED, VACUUM, VIEW, VIRTUAL, WINDOW, WITH, WITHOUT,
 }
 

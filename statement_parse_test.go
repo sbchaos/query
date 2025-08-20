@@ -242,99 +242,6 @@ func TestParser_ParseStatement2(t *testing.T) {
 				},
 			},
 		})
-
-		AssertParseStatement(t, `INSERT OR REPLACE INTO tbl (x) VALUES (1)`, &query.InsertStatement{
-			Insert:          pos(0),
-			InsertOr:        pos(7),
-			InsertOrReplace: pos(10),
-			Into:            pos(18),
-			Table:           &query.Ident{NamePos: pos(23), Name: "tbl"},
-			ColumnsLparen:   pos(27),
-			Columns: []*query.Ident{
-				{NamePos: pos(28), Name: "x"},
-			},
-			ColumnsRparen: pos(29),
-			Values:        pos(31),
-			ValueLists: []*query.ExprList{{
-				Lparen: pos(38),
-				Exprs: []query.Expr{
-					&query.NumberLit{ValuePos: pos(39), Value: "1"},
-				},
-				Rparen: pos(40),
-			}},
-		})
-		AssertParseStatement(t, `INSERT OR ROLLBACK INTO tbl (x) VALUES (1)`, &query.InsertStatement{
-			Insert:           pos(0),
-			InsertOr:         pos(7),
-			InsertOrRollback: pos(10),
-			Into:             pos(19),
-			Table:            &query.Ident{NamePos: pos(24), Name: "tbl"},
-			ColumnsLparen:    pos(28),
-			Columns: []*query.Ident{
-				{NamePos: pos(29), Name: "x"},
-			},
-			ColumnsRparen: pos(30),
-			Values:        pos(32),
-			ValueLists: []*query.ExprList{{
-				Lparen: pos(39),
-				Exprs: []query.Expr{
-					&query.NumberLit{ValuePos: pos(40), Value: "1"},
-				},
-				Rparen: pos(41),
-			}},
-		})
-		AssertParseStatement(t, `INSERT OR ABORT INTO tbl (x) VALUES (1)`, &query.InsertStatement{
-			Insert:        pos(0),
-			InsertOr:      pos(7),
-			InsertOrAbort: pos(10),
-			Into:          pos(16),
-			Table:         &query.Ident{NamePos: pos(21), Name: "tbl"},
-			ColumnsLparen: pos(25),
-			Columns: []*query.Ident{
-				{NamePos: pos(26), Name: "x"},
-			},
-			ColumnsRparen: pos(27),
-			Values:        pos(29),
-			ValueLists: []*query.ExprList{{
-				Lparen: pos(36),
-				Exprs: []query.Expr{
-					&query.NumberLit{ValuePos: pos(37), Value: "1"},
-				},
-				Rparen: pos(38),
-			}},
-		})
-		AssertParseStatement(t, `INSERT OR FAIL INTO tbl VALUES (1)`, &query.InsertStatement{
-			Insert:       pos(0),
-			InsertOr:     pos(7),
-			InsertOrFail: pos(10),
-			Into:         pos(15),
-			Table:        &query.Ident{NamePos: pos(20), Name: "tbl"},
-			Values:       pos(24),
-			ValueLists: []*query.ExprList{{
-				Lparen: pos(31),
-				Exprs: []query.Expr{
-					&query.NumberLit{ValuePos: pos(32), Value: "1"},
-				},
-				Rparen: pos(33),
-			}},
-		})
-		AssertParseStatement(t, `INSERT OR IGNORE INTO tbl AS tbl2 VALUES (1)`, &query.InsertStatement{
-			Insert:         pos(0),
-			InsertOr:       pos(7),
-			InsertOrIgnore: pos(10),
-			Into:           pos(17),
-			Table:          &query.Ident{NamePos: pos(22), Name: "tbl"},
-			As:             pos(26),
-			Alias:          &query.Ident{NamePos: pos(29), Name: "tbl2"},
-			Values:         pos(34),
-			ValueLists: []*query.ExprList{{
-				Lparen: pos(41),
-				Exprs: []query.Expr{
-					&query.NumberLit{ValuePos: pos(42), Value: "1"},
-				},
-				Rparen: pos(43),
-			}},
-		})
 		/*
 				AssertParseStatement(t, `WITH cte (foo) AS (SELECT bar) INSERT INTO tbl VALUES (1)`, &query.InsertStatement{
 					WithClause: &query.WithClause{
@@ -498,6 +405,30 @@ func TestParser_ParseStatement2(t *testing.T) {
 				},
 			},
 		})
+		AssertParseStatement(t, `INSERT OVERWRITE tbl (x) VALUES (1) RETURNING x`, &query.InsertStatement{
+			Insert:        pos(0),
+			Overwrite:     pos(7),
+			Table:         &query.Ident{NamePos: pos(17), Name: "tbl"},
+			ColumnsLparen: pos(21),
+			Columns: []*query.Ident{
+				{NamePos: pos(22), Name: "x"},
+			},
+			ColumnsRparen: pos(23),
+			Values:        pos(25),
+			ValueLists: []*query.ExprList{{
+				Lparen: pos(32),
+				Exprs: []query.Expr{
+					&query.NumberLit{ValuePos: pos(33), Value: "1"},
+				},
+				Rparen: pos(34),
+			}},
+			ReturningClause: &query.ReturningClause{
+				Returning: pos(36),
+				Columns: []*query.ResultColumn{
+					{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(46), Name: "x"}}},
+				},
+			},
+		})
 		AssertParseStatement(t, `INSERT INTO tbl (x) VALUES (1) RETURNING x AS y`, &query.InsertStatement{
 			Insert:        pos(0),
 			Into:          pos(7),
@@ -632,8 +563,7 @@ func TestParser_ParseStatement2(t *testing.T) {
 			},
 		})
 
-		AssertParseStatementError(t, `INSERT`, `1:6: expected INTO, found 'EOF'`)
-		AssertParseStatementError(t, `INSERT OR`, `1:9: expected ROLLBACK, REPLACE, ABORT, FAIL, or IGNORE, found 'EOF'`)
+		AssertParseStatementError(t, `INSERT`, `1:6: expected INTO or OVERWRITE, found 'EOF'`)
 		AssertParseStatementError(t, `INSERT INTO`, `1:11: expected table name, found 'EOF'`)
 		AssertParseStatementError(t, `INSERT INTO tbl AS`, `1:18: expected alias, found 'EOF'`)
 		AssertParseStatementError(t, `INSERT INTO tbl `, `1:16: expected VALUES, SELECT, or DEFAULT VALUES, found 'EOF'`)
