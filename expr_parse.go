@@ -220,6 +220,10 @@ func (p *Parser) handleSpecialCases(pos Pos, tok Token, lit string) (*Ident, err
 		return &Ident{Name: strName, NamePos: pos, Tok: tok}, nil
 	}
 
+	if tok == GROUPING {
+		return &Ident{NamePos: pos, Name: "GROUPING", Tok: IDENT}, nil
+	}
+
 	return nil, &Error{Pos: pos}
 }
 

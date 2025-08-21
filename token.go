@@ -145,6 +145,7 @@ const (
 	GENERATED
 	GLOB
 	GROUP
+	GROUPING
 	GROUPS
 	HAVING
 	IF
@@ -216,6 +217,7 @@ const (
 	SELECT
 	SELECT_COLUMN
 	SET
+	SETS
 	SPAN
 	STORED
 	STRICT
@@ -224,7 +226,6 @@ const (
 	THEN
 	TIES
 	TO
-	TRANSACTION
 	TRIGGER
 	TRUTH
 	UNBOUNDED
@@ -356,6 +357,7 @@ var tokens = [...]string{
 	GENERATED:         "GENERATED",
 	GLOB:              "GLOB",
 	GROUP:             "GROUP",
+	GROUPING:          "GROUPING",
 	GROUPS:            "GROUPS",
 	HAVING:            "HAVING",
 	IF:                "IF",
@@ -427,6 +429,7 @@ var tokens = [...]string{
 	SELECT:            "SELECT",
 	SELECT_COLUMN:     "SELECT_COLUMN",
 	SET:               "SET",
+	SETS:              "SETS",
 	SPAN:              "SPAN",
 	STORED:            "STORED",
 	STRICT:            "STRICT",
@@ -435,7 +438,6 @@ var tokens = [...]string{
 	THEN:              "THEN",
 	TIES:              "TIES",
 	TO:                "TO",
-	TRANSACTION:       "TRANSACTION",
 	TRIGGER:           "TRIGGER",
 	TRUTH:             "TRUTH",
 	UNBOUNDED:         "UNBOUNDED",
@@ -522,6 +524,9 @@ func isExprIdentToken(tok Token) bool {
 		return true
 	// List keywords that can be used as identifiers in expressions
 	case ROWID, CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP:
+		return true
+	// Special Cases
+	case GROUPING:
 		return true
 	// Core functions
 	case REPLACE, LIKE, GLOB, IF:

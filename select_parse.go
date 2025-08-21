@@ -103,6 +103,18 @@ func (p *Parser) parseSelectStatement(compounded bool, withClause *WithClause) (
 
 			if p.peek() == ALL {
 				stmt.GroupByAll, _, _ = p.scan()
+			} else if p.peek() == GROUPING {
+				stmt.Grouping, _, _ = p.scan()
+				if p.peek() != SETS {
+					return &stmt, p.errorExpected(p.pos, p.tok, "SETS")
+				}
+				stmt.GroupingSet, _, _ = p.scan()
+
+				expr, err := p.ParseExpr()
+				if err != nil {
+					return &stmt, err
+				}
+				stmt.GroupingExpr = expr
 			} else {
 				for {
 					expr, err := p.ParseExpr()

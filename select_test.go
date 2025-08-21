@@ -418,7 +418,6 @@ func TestParser_ParseStatement(t *testing.T) {
 				},
 			},
 		})
-
 		AssertParseStatement(t, `SELECT * FROM foo LEFT OUTER JOIN bar`, &query.SelectStatement{
 			Select: pos(0),
 			Columns: []*query.ResultColumn{
@@ -519,14 +518,12 @@ func TestParser_ParseStatement(t *testing.T) {
 				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(42), Name: "bar", Tok: query.IDENT}}},
 			},
 		})
-
 		AssertParseStatement(t, `SELECT * WHERE true`, &query.SelectStatement{
 			Select:    pos(0),
 			Columns:   []*query.ResultColumn{{Star: pos(7)}},
 			Where:     pos(9),
 			WhereExpr: &query.BoolLit{ValuePos: pos(15), Value: true},
 		})
-
 		AssertParseStatement(t, `SELECT 1 WHERE true AND true`, &query.SelectStatement{
 			Select:  pos(0),
 			Columns: []*query.ResultColumn{{Expr: &query.NumberLit{ValuePos: pos(7), Value: "1"}}},
@@ -538,7 +535,6 @@ func TestParser_ParseStatement(t *testing.T) {
 				Y:     &query.BoolLit{ValuePos: pos(24), Value: true},
 			},
 		})
-
 		AssertParseStatement(t, `SELECT * GROUP BY foo, bar`, &query.SelectStatement{
 			Select:  pos(0),
 			Columns: []*query.ResultColumn{{Star: pos(7)}},
@@ -555,6 +551,44 @@ func TestParser_ParseStatement(t *testing.T) {
 			Group:      pos(9),
 			GroupBy:    pos(15),
 			GroupByAll: pos(18),
+		})
+		AssertParseStatement(t, `Select * FROM cols GROUP BY GROUPING SETS ((a, b, a.c), (a, b, d))`, &query.SelectStatement{
+			Select:      pos(0),
+			Columns:     []*query.ResultColumn{{Star: pos(7)}},
+			From:        pos(9),
+			Source:      &query.QualifiedTableName{Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "cols", Tok: query.IDENT}}},
+			Group:       pos(19),
+			GroupBy:     pos(25),
+			Grouping:    pos(28),
+			GroupingSet: pos(37),
+			GroupingExpr: &query.ExprList{
+				Lparen: pos(42),
+				Rparen: pos(65),
+				Exprs: []query.Expr{
+					&query.ExprList{
+						Lparen: pos(43),
+						Rparen: pos(53),
+						Exprs: []query.Expr{
+							&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(44), Name: "a", Tok: query.IDENT}},
+							&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(47), Name: "b", Tok: query.IDENT}},
+							&query.MultiPartIdent{
+								First: &query.Ident{NamePos: pos(50), Name: "a", Tok: query.IDENT},
+								Dot1:  pos(51),
+								Name:  &query.Ident{NamePos: pos(52), Name: "c", Tok: query.IDENT}},
+						},
+					},
+					&query.ExprList{
+						Lparen: pos(56),
+						Rparen: pos(64),
+						Exprs: []query.Expr{
+							&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(57), Name: "a", Tok: query.IDENT}},
+							&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(60), Name: "b", Tok: query.IDENT}},
+							&query.MultiPartIdent{
+								Name: &query.Ident{NamePos: pos(63), Name: "d", Tok: query.IDENT}},
+						},
+					},
+				},
+			},
 		})
 		AssertParseStatement(t, `SELECT * GROUP BY foo HAVING true`, &query.SelectStatement{
 			Select:  pos(0),
@@ -788,6 +822,46 @@ func TestParser_ParseStatement(t *testing.T) {
 				}},
 			},
 		})
+		AssertParseStatement(t, `SELECT a, IF(GROUPING(b.c) = 1,'All',b.d) AS g1 FROM b`, &query.SelectStatement{
+			Select: pos(0),
+			Columns: []*query.ResultColumn{
+				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(7), Name: "a", Tok: query.IDENT}}},
+				{Expr: &query.Call{
+					Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(10), Name: "IF", Tok: query.IF}},
+					Lparen: pos(12),
+					Rparen: pos(40),
+					Args: []query.Expr{
+						&query.BinaryExpr{
+							X: &query.Call{
+								Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(13), Name: "GROUPING", Tok: query.IDENT}},
+								Lparen: pos(21),
+								Rparen: pos(25),
+								Args: []query.Expr{
+									&query.MultiPartIdent{
+										First: &query.Ident{NamePos: pos(22), Name: "b", Tok: query.IDENT},
+										Dot1:  pos(23),
+										Name:  &query.Ident{NamePos: pos(24), Name: "c", Tok: query.IDENT}},
+								},
+							},
+							OpPos: pos(27),
+							Op:    query.EQ,
+							Y:     &query.NumberLit{ValuePos: pos(29), Value: "1"},
+						},
+						&query.StringLit{ValuePos: pos(31), Value: "All"},
+						&query.MultiPartIdent{
+							First: &query.Ident{NamePos: pos(37), Name: "b", Tok: query.IDENT},
+							Dot1:  pos(38),
+							Name:  &query.Ident{NamePos: pos(39), Name: "d", Tok: query.IDENT}},
+					},
+				},
+					As: pos(42), Alias: &query.Ident{NamePos: pos(45), Name: "g1", Tok: query.IDENT}},
+			},
+			From: pos(48),
+			Source: &query.QualifiedTableName{
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(53), Name: "b", Tok: query.IDENT}},
+			},
+		})
+
 		AssertParseStatement(t, `SELECT rowid FROM foo ORDER BY rowid`, &query.SelectStatement{
 			Select: pos(0),
 			Columns: []*query.ResultColumn{

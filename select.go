@@ -36,6 +36,9 @@ type SelectStatement struct {
 	GroupBy      Pos    // position of BY keyword after GROUP
 	GroupByAll   Pos    // positon of ALL keyword after GROUP BY
 	GroupByExprs []Expr // group by expression list
+	Grouping     Pos    // GROUPING
+	GroupingSet  Pos    // position of SETS
+	GroupingExpr Expr   // Grouping Set config
 	Having       Pos    // position of HAVING keyword
 	HavingExpr   Expr   // HAVING expression
 	Qualify      Pos    // position of QUALIFY keyword
@@ -73,6 +76,7 @@ func (s *SelectStatement) Clone() *SelectStatement {
 	other.Source = CloneSource(s.Source)
 	other.WhereExpr = CloneExpr(s.WhereExpr)
 	other.GroupByExprs = cloneExprs(s.GroupByExprs)
+	other.GroupingExpr = CloneExpr(s.GroupingExpr)
 	other.HavingExpr = CloneExpr(s.HavingExpr)
 	other.QualifyExpr = CloneExpr(s.QualifyExpr)
 	other.Windows = cloneWindows(s.Windows)
@@ -134,6 +138,9 @@ func (s *SelectStatement) String() string {
 			buf.WriteString(" GROUP BY ")
 			if s.GroupBy.IsValid() {
 				buf.WriteString("ALL")
+			} else if s.Grouping.IsValid() {
+				buf.WriteString(" GROUPING SETS ")
+				buf.WriteString(s.GroupingSet.String())
 			} else {
 				for i, expr := range s.GroupByExprs {
 					if i != 0 {
