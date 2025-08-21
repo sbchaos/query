@@ -426,19 +426,6 @@ func IsInteger(s string) bool {
 	return s != ""
 }
 
-func quoteRune(tok Token) rune {
-	switch {
-	case tok == STRING:
-		return '\''
-	case tok == QIDENT:
-		return '"'
-	case tok == TSTRING:
-		return '`'
-	default:
-		return 0
-	}
-}
-
 func endQuote(ch rune) rune {
 	switch ch {
 	case '\'':

@@ -106,7 +106,7 @@ func (p *Parser) peek() Token {
 	return p.tok
 }
 
-func (p *Parser) peekScan() (Pos, Token, string) {
+func (p *Parser) peekScan() (Pos, Token, string) { // nolint
 	if !p.full {
 		p.scan()
 		p.unscan()

@@ -827,14 +827,3 @@ func (p *Parser) parseWithStatement() (Statement, error) {
 		return nil, p.errorExpected(p.pos, p.tok, "SELECT, VALUES, INSERT, REPLACE, UPDATE, or DELETE")
 	}
 }
-
-func isTypeName(s string) bool {
-	switch s {
-	case "BIGINT", "BLOB", "BOOLEAN", "CHARACTER", "CLOB", "DATE", "DATETIME",
-		"DECIMAL", "DOUBLE", "FLOAT", "INT", "INTEGER", "MEDIUMINT", "NCHAR",
-		"NUMERIC", "NVARCHAR", "REAL", "SMALLINT", "TEXT", "TINYINT", "VARCHAR":
-		return true
-	default:
-		return false
-	}
-}
