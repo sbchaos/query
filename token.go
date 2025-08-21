@@ -165,6 +165,7 @@ const (
 	ISNULL // TODO: REMOVE?
 	JOIN
 	KEY
+	LATERAL
 	LAST
 	LEFT
 	LIKE
@@ -377,6 +378,7 @@ var tokens = [...]string{
 	ISNULL:            "ISNULL",
 	JOIN:              "JOIN",
 	KEY:               "KEY",
+	LATERAL:           "LATERAL",
 	LAST:              "LAST",
 	LEFT:              "LEFT",
 	LIKE:              "LIKE",

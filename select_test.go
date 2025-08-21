@@ -210,31 +210,6 @@ func TestParser_ParseStatement(t *testing.T) {
 				Alias: &query.Ident{NamePos: pos(26), Name: "tbl2", Tok: query.IDENT},
 			},
 		})
-		AssertParseStatement(t, `SELECT * FROM tbl INDEXED BY idx`, &query.SelectStatement{
-			Select: pos(0),
-			Columns: []*query.ResultColumn{
-				{Star: pos(7)},
-			},
-			From: pos(9),
-			Source: &query.QualifiedTableName{
-				Name:      &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "tbl", Tok: query.IDENT}},
-				Indexed:   pos(18),
-				IndexedBy: pos(26),
-				Index:     &query.Ident{NamePos: pos(29), Name: "idx", Tok: query.IDENT},
-			},
-		})
-		AssertParseStatement(t, `SELECT * FROM tbl NOT INDEXED`, &query.SelectStatement{
-			Select: pos(0),
-			Columns: []*query.ResultColumn{
-				{Star: pos(7)},
-			},
-			From: pos(9),
-			Source: &query.QualifiedTableName{
-				Name:       &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "tbl", Tok: query.IDENT}},
-				Not:        pos(18),
-				NotIndexed: pos(22),
-			},
-		})
 
 		AssertParseStatement(t, `SELECT * FROM (SELECT *) AS tbl`, &query.SelectStatement{
 			Select: pos(0),
@@ -533,6 +508,117 @@ func TestParser_ParseStatement(t *testing.T) {
 				OpPos: pos(20),
 				Op:    query.AND,
 				Y:     &query.BoolLit{ValuePos: pos(24), Value: true},
+			},
+		})
+		AssertParseStatement(t, `Select * FROM abc WHERE a.sell_date BETWEEN DATEADD(@end_date, -13, 'dd') AND @end_date OR a.sell_date = DATEADD(@end_date, -1, 'yyyy')`, &query.SelectStatement{
+			Select: pos(0),
+			Columns: []*query.ResultColumn{
+				{Star: pos(7)},
+			},
+			From: pos(9),
+			Source: &query.QualifiedTableName{
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "abc", Tok: query.IDENT}},
+			},
+			Where: pos(18),
+			WhereExpr: &query.BinaryExpr{
+				X: &query.BinaryExpr{
+					X: &query.MultiPartIdent{
+						First: &query.Ident{NamePos: pos(24), Name: "a", Tok: query.IDENT},
+						Dot1:  pos(25),
+						Name:  &query.Ident{NamePos: pos(26), Name: "sell_date", Tok: query.IDENT},
+					},
+					OpPos: pos(36),
+					Op:    query.BETWEEN,
+					Y: &query.Range{
+						X: &query.Call{
+							Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(44), Name: "DATEADD", Tok: query.IDENT}},
+							Lparen: pos(51),
+							Rparen: pos(72),
+							Args: []query.Expr{
+								&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(52), Name: "@end_date", Tok: query.BIND}},
+								&query.UnaryExpr{OpPos: pos(63), Op: query.MINUS, X: &query.NumberLit{ValuePos: pos(64), Value: "13"}},
+								&query.StringLit{ValuePos: pos(68), Value: "dd"},
+							},
+						},
+						And: pos(74),
+						Y:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(78), Name: "@end_date", Tok: query.BIND}},
+					},
+				},
+				OpPos: pos(88),
+				Op:    query.OR,
+				Y: &query.BinaryExpr{
+					X: &query.MultiPartIdent{
+						First: &query.Ident{NamePos: pos(91), Name: "a", Tok: query.IDENT},
+						Dot1:  pos(92),
+						Name:  &query.Ident{NamePos: pos(93), Name: "sell_date", Tok: query.IDENT},
+					},
+					OpPos: pos(103),
+					Op:    query.EQ,
+					Y: &query.Call{
+						Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(105), Name: "DATEADD", Tok: query.IDENT}},
+						Lparen: pos(112),
+						Rparen: pos(134),
+						Args: []query.Expr{
+							&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(113), Name: "@end_date", Tok: query.BIND}},
+							&query.UnaryExpr{
+								OpPos: pos(124),
+								Op:    query.MINUS,
+								X:     &query.NumberLit{ValuePos: pos(125), Value: "1"},
+							},
+							&query.StringLit{ValuePos: pos(128), Value: "yyyy"},
+						},
+					},
+				},
+			},
+		})
+		AssertParseStatement(t, `Select * from abc LATERAL VIEW EXPLODE(filters) _T2 AS f LATERAL VIEW EXPLODE(_T2.f.actions) _T3 AS ap`, &query.SelectStatement{
+			Select:  pos(0),
+			Columns: []*query.ResultColumn{{Star: pos(7)}},
+			From:    pos(9),
+			Source: &query.QualifiedTableName{
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "abc", Tok: query.IDENT}},
+				LateralViews: []*query.LateralView{
+					{
+						Lateral: pos(18),
+						View:    pos(26),
+						Udtf: &query.Call{
+							Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(31), Name: "EXPLODE", Tok: query.IDENT}},
+							Lparen: pos(38),
+							Rparen: pos(46),
+							Args: []query.Expr{
+								&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(39), Name: "filters", Tok: query.IDENT}},
+							},
+						},
+						TableAlias: &query.Ident{NamePos: pos(48), Name: "_T2", Tok: query.IDENT},
+						As:         pos(52),
+						ColAlias: []*query.Ident{
+							{NamePos: pos(55), Name: "f", Tok: query.IDENT},
+						},
+					},
+					{
+						Lateral: pos(57),
+						View:    pos(65),
+						Udtf: &query.Call{
+							Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(70), Name: "EXPLODE", Tok: query.IDENT}},
+							Lparen: pos(77),
+							Rparen: pos(91),
+							Args: []query.Expr{
+								&query.MultiPartIdent{
+									First:  &query.Ident{NamePos: pos(78), Name: "_T2", Tok: query.IDENT},
+									Dot1:   pos(81),
+									Second: &query.Ident{NamePos: pos(82), Name: "f", Tok: query.IDENT},
+									Dot2:   pos(83),
+									Name:   &query.Ident{NamePos: pos(84), Name: "actions", Tok: query.IDENT},
+								},
+							},
+						},
+						TableAlias: &query.Ident{NamePos: pos(93), Name: "_T3", Tok: query.IDENT},
+						As:         pos(97),
+						ColAlias: []*query.Ident{
+							{NamePos: pos(100), Name: "ap", Tok: query.IDENT},
+						},
+					},
+				},
 			},
 		})
 		AssertParseStatement(t, `SELECT * GROUP BY foo, bar`, &query.SelectStatement{
@@ -976,9 +1062,6 @@ func TestParser_ParseStatement(t *testing.T) {
 		AssertParseStatementError(t, `SELECT foo,`, `1:11: expected expression, found 'EOF'`)
 		AssertParseStatementError(t, `SELECT foo AS`, `1:13: expected column alias, found 'EOF'`)
 		AssertParseStatementError(t, `SELECT foo FROM`, `1:15: expected table name or left paren, found 'EOF'`)
-		AssertParseStatementError(t, `SELECT foo FROM foo INDEXED`, `1:27: expected BY, found 'EOF'`)
-		AssertParseStatementError(t, `SELECT foo FROM foo INDEXED BY`, `1:30: expected index name, found 'EOF'`)
-		AssertParseStatementError(t, `SELECT foo FROM foo NOT`, `1:23: expected INDEXED, found 'EOF'`)
 		AssertParseStatementError(t, `SELECT * FROM foo INNER`, `1:23: expected JOIN, found 'EOF'`)
 		AssertParseStatementError(t, `SELECT * FROM foo CROSS`, `1:23: expected JOIN, found 'EOF'`)
 		AssertParseStatementError(t, `SELECT * FROM foo NATURAL`, `1:25: expected JOIN, found 'EOF'`)

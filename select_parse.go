@@ -542,33 +542,72 @@ func (p *Parser) parseQualifiedTableName(ident *Ident, aliasOK, indexedOK bool) 
 			return &tbl, err
 		}
 	}
-	// Parse optional "INDEXED BY index-name" or "NOT INDEXED".
-	switch p.peek() {
-	case INDEXED:
-		if !indexedOK {
-			return &tbl, p.errorExpected(p.pos, p.tok, "unqualified table name")
-		}
-		tbl.Indexed, _, _ = p.scan()
-		if p.peek() != BY {
-			return &tbl, p.errorExpected(p.pos, p.tok, "BY")
-		}
-		tbl.IndexedBy, _, _ = p.scan()
 
-		if tbl.Index, err = p.parseIdent("index name"); err != nil {
+	for p.peek() == LATERAL {
+		view, err := p.parseLateralView()
+		if err != nil {
 			return &tbl, err
 		}
-	case NOT:
-		tbl.Not, _, _ = p.scan()
-		if p.peek() != INDEXED {
-			return &tbl, p.errorExpected(p.pos, p.tok, "INDEXED")
-		}
-		if !indexedOK {
-			return &tbl, p.errorExpected(p.pos, p.tok, "unqualified table name")
-		}
-		tbl.NotIndexed, _, _ = p.scan()
+		tbl.LateralViews = append(tbl.LateralViews, view)
 	}
 
 	return &tbl, nil
+}
+
+func (p *Parser) parseLateralView() (*LateralView, error) {
+	var lv LateralView
+	p1, _, _ := p.scan()
+	lv.Lateral = p1
+
+	p2, t2, _ := p.scan()
+	if t2 != VIEW {
+		return &lv, p.errorExpected(p.pos, p.tok, "lateral view")
+	}
+	lv.View = p2
+
+	if p.peek() == OUTER {
+		lv.Outer, _, _ = p.scan()
+	}
+
+	expr, err := p.parseOperand()
+	if err != nil {
+		return &lv, err
+	}
+
+	c1, ok := expr.(*Call)
+	if !ok {
+		return &lv, p.errorExpected(p.pos, p.tok, "lateral view udf call")
+	}
+	lv.Udtf = c1
+
+	if !isExprIdentToken(p.peek()) {
+		return &lv, p.errorExpected(p.pos, p.tok, "lateral view TableAlias")
+	}
+	p2, t2, lit2 := p.scan()
+	lv.TableAlias = &Ident{Name: lit2, NamePos: p2, Tok: t2}
+
+	if p.peek() != AS {
+		return &lv, p.errorExpected(p.pos, p.tok, "lateral view AS")
+	}
+	lv.As, _, _ = p.scan()
+
+	for {
+		var idents []*Ident
+		if !isExprIdentToken(p.peek()) {
+			return &lv, p.errorExpected(p.pos, p.tok, "lateral view TableAlias")
+		}
+		p3, t3, lit3 := p.scan()
+		idents = append(idents, &Ident{Name: lit3, NamePos: p3, Tok: t3})
+
+		if p.peek() == COMMA {
+			p.scan()
+		} else {
+			lv.ColAlias = idents
+			break
+		}
+	}
+
+	return &lv, nil
 }
 
 func (p *Parser) parseQualifiedTableFunctionName(ident *Ident) (_ *QualifiedTableFunctionName, err error) {

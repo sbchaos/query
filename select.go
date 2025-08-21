@@ -442,15 +442,79 @@ func ResolveSource(root Source, name string) Source {
 	return ret
 }
 
+// LateralView can be used to create a view from array or map column
+// Defined in maxcompute like
+//
+//	LATERALVIEW: LATERAL VIEW [OUTER] <udtf_name>(<expression>) <table_alias> AS <columnAlias> (',' <columnAlias>)
+//	fromClause: FROM <baseTable> (LATERALVIEW) [(LATERALVIEW) ...]
+type LateralView struct {
+	Lateral    Pos
+	View       Pos
+	Outer      Pos
+	Udtf       *Call
+	TableAlias *Ident
+	As         Pos
+	ColAlias   []*Ident
+}
+
+func (l *LateralView) Clone() *LateralView {
+	if l == nil {
+		return nil
+	}
+
+	other := *l
+	other.Udtf = l.Udtf.Clone()
+	other.TableAlias = l.TableAlias.Clone()
+	other.ColAlias = cloneIdents(l.ColAlias)
+	return &other
+}
+
+func cloneLateralViews(a []*LateralView) []*LateralView {
+	if a == nil {
+		return nil
+	}
+	other := make([]*LateralView, len(a))
+	for i := range a {
+		other[i] = a[i].Clone()
+	}
+	return other
+}
+
+func (l *LateralView) String() string {
+	var buf bytes.Buffer
+
+	buf.WriteString("Lateral View ")
+	if l.Outer.IsValid() {
+		buf.WriteString("Outer ")
+	}
+
+	if l.Udtf != nil {
+		buf.WriteString(l.Udtf.String())
+		buf.WriteString(" ")
+	}
+	if l.TableAlias != nil {
+		buf.WriteString(l.TableAlias.String())
+		buf.WriteString(" ")
+	}
+	if l.As.IsValid() {
+		buf.WriteString("As ")
+	}
+	for i, col := range l.ColAlias {
+		if i != 0 {
+			buf.WriteString(", ")
+		}
+		buf.WriteString(col.String())
+	}
+
+	return buf.String()
+}
+
 type QualifiedTableName struct {
-	Name       *MultiPartIdent
-	As         Pos    // position of AS keyword
-	Alias      *Ident // optional table alias
-	Indexed    Pos    // position of INDEXED keyword
-	IndexedBy  Pos    // position of BY keyword after INDEXED
-	Not        Pos    // position of NOT keyword before INDEXED
-	NotIndexed Pos    // position of NOT keyword before INDEXED
-	Index      *Ident // name of index
+	Name  *MultiPartIdent
+	As    Pos    // position of AS keyword
+	Alias *Ident // optional table alias
+
+	LateralViews []*LateralView
 }
 
 // TableName returns the name used to identify n.
@@ -470,7 +534,7 @@ func (n *QualifiedTableName) Clone() *QualifiedTableName {
 	other := *n
 	other.Name = n.Name.Clone()
 	other.Alias = n.Alias.Clone()
-	other.Index = n.Index.Clone()
+	other.LateralViews = cloneLateralViews(n.LateralViews)
 	return &other
 }
 
@@ -482,11 +546,10 @@ func (n *QualifiedTableName) String() string {
 		fmt.Fprintf(&buf, " AS %s", n.Alias.String())
 	}
 
-	if n.Index != nil {
-		fmt.Fprintf(&buf, " INDEXED BY %s", n.Index.String())
-	} else if n.NotIndexed.IsValid() {
-		buf.WriteString(" NOT INDEXED")
+	for _, lv := range n.LateralViews {
+		fmt.Fprintf(&buf, " %s", lv.String())
 	}
+
 	return buf.String()
 }
 
