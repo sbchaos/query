@@ -571,6 +571,51 @@ func TestParser_ParseStatement(t *testing.T) {
 				},
 			},
 		})
+		AssertParseStatement(t, `SELECT * FROM dt WHERE true AND effective_timestamp <= CAST(dstart AS TIMESTAMP)`, &query.SelectStatement{
+			Select:  pos(0),
+			Columns: []*query.ResultColumn{{Star: pos(7)}},
+			From:    pos(9),
+			Source: &query.QualifiedTableName{
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "dt", Tok: query.IDENT}},
+			},
+			Where: pos(17),
+			WhereExpr: &query.BinaryExpr{
+				X:     &query.BoolLit{ValuePos: pos(23), Value: true},
+				OpPos: pos(28),
+				Op:    query.AND,
+				Y: &query.BinaryExpr{
+					X:     &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(32), Name: "effective_timestamp", Tok: query.IDENT}},
+					OpPos: pos(52),
+					Op:    query.LE,
+					Y: &query.CastExpr{
+						Cast:   pos(55),
+						Lparen: pos(59),
+						Rparen: pos(79),
+						X:      &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(60), Name: "dstart", Tok: query.IDENT}},
+						As:     pos(67),
+						Type: &query.Type{
+							Name: &query.Ident{NamePos: pos(70), Name: "TIMESTAMP", Tok: query.TIMESTAMP},
+						},
+					},
+				},
+			},
+		})
+		AssertParseStatement(t, `SELECT DATE '{{ .DSTART | Date }}' AS dstart FROM dt `, &query.SelectStatement{
+			Select: pos(0),
+			Columns: []*query.ResultColumn{
+				{
+					Expr: &query.MultiPartIdent{
+						Name: &query.Ident{NamePos: pos(7), Name: "DATE '{{ .DSTART | Date }}'", Tok: query.DATE},
+					},
+					As:    pos(35),
+					Alias: &query.Ident{NamePos: pos(38), Name: "dstart", Tok: query.IDENT},
+				},
+			},
+			From: pos(45),
+			Source: &query.QualifiedTableName{
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(50), Name: "dt", Tok: query.IDENT}},
+			},
+		})
 		AssertParseStatement(t, `Select * from abc LATERAL VIEW EXPLODE(filters) _T2 AS f LATERAL VIEW EXPLODE(_T2.f.actions) _T3 AS ap`, &query.SelectStatement{
 			Select:  pos(0),
 			Columns: []*query.ResultColumn{{Star: pos(7)}},

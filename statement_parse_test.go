@@ -31,7 +31,7 @@ func TestParser_ParseStatement2(t *testing.T) {
 	t.Run("Variable", func(t *testing.T) {
 		AssertParseStatement(t, `@start_date Date;`, &query.DeclarationStatement{
 			Name: &query.Ident{Name: "@start_date", NamePos: pos(0), Tok: query.BIND},
-			Type: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(12), Name: "Date", Tok: query.IDENT}},
+			Type: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(12), Name: "Date", Tok: query.DATE}},
 		})
 		AssertParseStatement(t, `@start_date := '{{ .DSTART | Date }}';`, &query.DeclarationStatement{
 			Name:  &query.Ident{Name: "@start_date", NamePos: pos(0), Tok: query.BIND},
@@ -39,8 +39,7 @@ func TestParser_ParseStatement2(t *testing.T) {
 		})
 		AssertParseStatement(t, `@start_date := DATE '{{ .DSTART | Date }}';`, &query.DeclarationStatement{
 			Name:  &query.Ident{Name: "@start_date", NamePos: pos(0), Tok: query.BIND},
-			Type:  &query.MultiPartIdent{Name: &query.Ident{Name: "DATE", NamePos: pos(15), Tok: query.IDENT}},
-			Value: &query.StringLit{ValuePos: pos(20), Value: "{{ .DSTART | Date }}"},
+			Value: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(15), Name: "DATE '{{ .DSTART | Date }}'", Tok: query.DATE}},
 		})
 		AssertParseStatement(t, `@start_date := TO_DATE('{{ .DSTART | Date }}');`, &query.DeclarationStatement{
 			Name: &query.Ident{Name: "@start_date", NamePos: pos(0), Tok: query.BIND},
@@ -101,7 +100,7 @@ func TestParser_ParseStatement2(t *testing.T) {
 						Name: &query.MultiPartIdent{Name: &query.Ident{
 							NamePos: pos(11),
 							Name:    "TIMESTAMP",
-							Tok:     query.IDENT,
+							Tok:     query.TIMESTAMP,
 						}},
 						Lparen: pos(20),
 						Args: []query.Expr{

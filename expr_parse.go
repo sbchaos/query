@@ -74,6 +74,9 @@ func (p *Parser) parseIdent(desc string) (*Ident, error) {
 	switch tok {
 	case IDENT, QIDENT, TSTRING, BIND, TMPL:
 		return &Ident{Name: lit, NamePos: pos, Tok: tok}, nil
+	// Special Cases
+	case DATE, TIMESTAMP:
+		return &Ident{Name: lit, NamePos: pos, Tok: tok}, nil
 	case NULL:
 		return &Ident{Name: lit, NamePos: pos}, nil
 	default:
@@ -88,7 +91,7 @@ func (p *Parser) parseType() (_ *Type, err error) {
 	var typ Type
 	for {
 		tok := p.peek()
-		if tok != IDENT && tok != NULL {
+		if tok != IDENT && tok != NULL && tok != DATE && tok != TIMESTAMP {
 			break
 		}
 		typeName, err := p.parseIdent("type name")
@@ -222,6 +225,16 @@ func (p *Parser) handleSpecialCases(pos Pos, tok Token, lit string) (*Ident, err
 
 	if tok == GROUPING {
 		return &Ident{NamePos: pos, Name: "GROUPING", Tok: IDENT}, nil
+	}
+
+	if tok == DATE || tok == TIMESTAMP {
+		strName := lit
+		peek := p.peek()
+		if isExprIdentToken(peek) || peek == STRING {
+			_, _, lit2 := p.scan()
+			strName = strName + " '" + lit2 + "'"
+		}
+		return &Ident{Name: strName, NamePos: pos, Tok: tok}, nil
 	}
 
 	return nil, &Error{Pos: pos}

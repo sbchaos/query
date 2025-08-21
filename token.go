@@ -117,6 +117,7 @@ const (
 	CURRENT_DATE
 	CURRENT_TIMESTAMP
 	DATABASE
+	DATE
 	DEFERRABLE
 	DEFERRED
 	DELETE
@@ -226,6 +227,7 @@ const (
 	TEMP
 	THEN
 	TIES
+	TIMESTAMP
 	TO
 	TRIGGER
 	TRUTH
@@ -330,6 +332,7 @@ var tokens = [...]string{
 	CURRENT_DATE:      "CURRENT_DATE",
 	CURRENT_TIMESTAMP: "CURRENT_TIMESTAMP",
 	DATABASE:          "DATABASE",
+	DATE:              "DATE",
 	DEFERRABLE:        "DEFERRABLE",
 	DEFERRED:          "DEFERRED",
 	DELETE:            "DELETE",
@@ -439,6 +442,7 @@ var tokens = [...]string{
 	TEMP:              "TEMP",
 	THEN:              "THEN",
 	TIES:              "TIES",
+	TIMESTAMP:         "TIMESTAMP",
 	TO:                "TO",
 	TRIGGER:           "TRIGGER",
 	TRUTH:             "TRUTH",
@@ -528,7 +532,7 @@ func isExprIdentToken(tok Token) bool {
 	case ROWID, CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP:
 		return true
 	// Special Cases
-	case GROUPING:
+	case GROUPING, DATE, TIMESTAMP:
 		return true
 	// Core functions
 	case REPLACE, LIKE, GLOB, IF:
