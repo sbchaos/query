@@ -91,7 +91,7 @@ func (p *Parser) parseType() (_ *Type, err error) {
 	var typ Type
 	for {
 		tok := p.peek()
-		if tok != IDENT && tok != NULL && tok != DATE && tok != TIMESTAMP {
+		if !isTypeToken(tok) {
 			break
 		}
 		typeName, err := p.parseIdent("type name")

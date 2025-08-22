@@ -9,6 +9,8 @@ func (*DeclarationStatement) node() {}
 func (*DeleteStatement) node()      {}
 func (*InsertStatement) node()      {}
 func (*SetStatement) node()         {}
+func (*CreateTableStatement) node() {}
+func (*DropTableStatement) node()   {}
 
 type Statement interface {
 	Node
@@ -19,6 +21,8 @@ func (*DeclarationStatement) stmt() {}
 func (*DeleteStatement) stmt()      {}
 func (*InsertStatement) stmt()      {}
 func (*SetStatement) stmt()         {}
+func (*CreateTableStatement) stmt() {}
+func (*DropTableStatement) stmt()   {}
 
 // CloneStatement returns a deep copy stmt.
 func CloneStatement(stmt Statement) Statement {
@@ -462,5 +466,129 @@ func (c *IndexedColumn) String() string {
 		buf.WriteString(" DESC")
 	}
 
+	return buf.String()
+}
+
+type CreateTableStatement struct {
+	Create      Pos
+	Or          Pos
+	Replace     Pos
+	Table       Pos
+	If          Pos
+	IfNot       Pos
+	IfNotExists Pos
+	Name        *MultiPartIdent
+
+	Lparen  Pos                 // position of left paren of column list
+	Columns []*ColumnDefinition // column definitions
+	Rparen  Pos                 // position of right paren of column list
+
+	As     Pos              // position of AS keyword (optional)
+	Select *SelectStatement // select stmt to build from
+}
+
+// Clone returns a deep copy of s.
+func (s *CreateTableStatement) Clone() *CreateTableStatement {
+	if s == nil {
+		return s
+	}
+	other := *s
+	other.Name = s.Name.Clone()
+	other.Columns = cloneColumnDefinitions(s.Columns)
+	other.Select = s.Select.Clone()
+	return &other
+}
+
+// String returns the string representation of the statement.
+func (s *CreateTableStatement) String() string {
+	var buf bytes.Buffer
+	buf.WriteString("CREATE TABLE")
+	if s.IfNotExists.IsValid() {
+		buf.WriteString(" IF NOT EXISTS")
+	}
+	buf.WriteString(" ")
+	buf.WriteString(s.Name.String())
+
+	if s.Select != nil {
+		buf.WriteString(" AS ")
+		buf.WriteString(s.Select.String())
+	} else {
+		buf.WriteString(" (")
+		for i := range s.Columns {
+			if i != 0 {
+				buf.WriteString(", ")
+			}
+			buf.WriteString(s.Columns[i].String())
+		}
+		buf.WriteString(")")
+	}
+
+	return buf.String()
+}
+
+type ColumnDefinition struct {
+	Name *Ident // column name
+	Type *Type  // data type
+}
+
+// Clone returns a deep copy of d.
+func (c *ColumnDefinition) Clone() *ColumnDefinition {
+	if c == nil {
+		return c
+	}
+	other := *c
+	other.Name = c.Name.Clone()
+	other.Type = c.Type.Clone()
+	return &other
+}
+
+func cloneColumnDefinitions(a []*ColumnDefinition) []*ColumnDefinition {
+	if a == nil {
+		return nil
+	}
+	other := make([]*ColumnDefinition, len(a))
+	for i := range a {
+		other[i] = a[i].Clone()
+	}
+	return other
+}
+
+// String returns the string representation of the statement.
+func (c *ColumnDefinition) String() string {
+	var buf bytes.Buffer
+	buf.WriteString(c.Name.String())
+	if c.Type != nil {
+		buf.WriteString(" ")
+		buf.WriteString(c.Type.String())
+	}
+	return buf.String()
+}
+
+type DropTableStatement struct {
+	Drop     Pos             // position of DROP keyword
+	Table    Pos             // position of TABLE keyword
+	If       Pos             // position of IF keyword
+	IfExists Pos             // position of EXISTS keyword after IF
+	Name     *MultiPartIdent // view name
+}
+
+// Clone returns a deep copy of s.
+func (s *DropTableStatement) Clone() *DropTableStatement {
+	if s == nil {
+		return nil
+	}
+	other := *s
+	other.Name = s.Name.Clone()
+	return &other
+}
+
+// String returns the string representation of the statement.
+func (s *DropTableStatement) String() string {
+	var buf bytes.Buffer
+	buf.WriteString("DROP TABLE")
+	if s.IfExists.IsValid() {
+		buf.WriteString(" IF EXISTS")
+	}
+	fmt.Fprintf(&buf, " %s", s.Name.String())
 	return buf.String()
 }

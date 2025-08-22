@@ -775,4 +775,386 @@ func TestParser_ParseStatement2(t *testing.T) {
 		AssertParseStatementError(t, `DELETE FROM tbl LIMIT 1,`, `1:24: expected expression, found 'EOF'`)
 		AssertParseStatementError(t, `DELETE FROM tbl LIMIT 1 OFFSET`, `1:30: expected expression, found 'EOF'`)
 	})
+
+	t.Run("DropTable", func(t *testing.T) {
+		AssertParseStatement(t, `DROP TABLE vw`, &query.DropTableStatement{
+			Drop:  pos(0),
+			Table: pos(5),
+			Name:  &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(11), Name: "vw", Tok: query.IDENT}},
+		})
+		AssertParseStatement(t, `DROP TABLE proj.sch.tbl`, &query.DropTableStatement{
+			Drop:  pos(0),
+			Table: pos(5),
+			Name: &query.MultiPartIdent{
+				First:  &query.Ident{NamePos: pos(11), Name: "proj", Tok: query.IDENT},
+				Dot1:   pos(15),
+				Second: &query.Ident{NamePos: pos(16), Name: "sch", Tok: query.IDENT},
+				Dot2:   pos(19),
+				Name:   &query.Ident{NamePos: pos(20), Name: "tbl", Tok: query.IDENT},
+			},
+		})
+		AssertParseStatement(t, `DROP TABLE IF EXISTS vw`, &query.DropTableStatement{
+			Drop:     pos(0),
+			Table:    pos(5),
+			If:       pos(11),
+			IfExists: pos(14),
+			Name:     &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(21), Name: "vw", Tok: query.IDENT}},
+		})
+		AssertParseStatementError(t, `DROP TABLE`, `1:10: expected table name, found 'EOF'`)
+		AssertParseStatementError(t, `DROP TABLE IF`, `1:13: expected EXISTS, found 'EOF'`)
+		AssertParseStatementError(t, `DROP TABLE IF EXISTS`, `1:20: expected table name, found 'EOF'`)
+	})
+
+	t.Run("CreateTable", func(t *testing.T) {
+		AssertParseStatement(t, `CREATE TABLE tbl (col1 TEXT, col2 DECIMAL(10,5))`, &query.CreateTableStatement{
+			Create: pos(0),
+			Table:  pos(7),
+			Name: &query.MultiPartIdent{Name: &query.Ident{
+				Name:    "tbl",
+				NamePos: pos(13),
+				Tok:     query.IDENT,
+			}},
+			Lparen: pos(17),
+			Columns: []*query.ColumnDefinition{
+				{
+					Name: &query.Ident{NamePos: pos(18), Name: "col1", Tok: query.IDENT},
+					Type: &query.Type{
+						Name: &query.Ident{NamePos: pos(23), Name: "TEXT", Tok: query.IDENT},
+					},
+				},
+				{
+					Name: &query.Ident{NamePos: pos(29), Name: "col2", Tok: query.IDENT},
+					Type: &query.Type{
+						Name:      &query.Ident{NamePos: pos(34), Name: "DECIMAL", Tok: query.IDENT},
+						Lparen:    pos(41),
+						Precision: &query.NumberLit{ValuePos: pos(42), Value: "10"},
+						Scale:     &query.NumberLit{ValuePos: pos(45), Value: "5"},
+						Rparen:    pos(46),
+					},
+				},
+			},
+			Rparen: pos(47),
+		})
+
+		// No column type
+		AssertParseStatement(t, `CREATE TABLE tbl (col1, col2)`, &query.CreateTableStatement{
+			Create: pos(0),
+			Table:  pos(7),
+			Name: &query.MultiPartIdent{Name: &query.Ident{
+				Name:    "tbl",
+				NamePos: pos(13),
+				Tok:     query.IDENT,
+			}},
+			Lparen: pos(17),
+			Columns: []*query.ColumnDefinition{
+				{
+					Name: &query.Ident{NamePos: pos(18), Name: "col1", Tok: query.IDENT},
+				},
+				{
+					Name: &query.Ident{NamePos: pos(24), Name: "col2", Tok: query.IDENT},
+				},
+			},
+			Rparen: pos(28),
+		})
+
+		// Column name as a bare keyword
+		AssertParseStatement(t, `CREATE TABLE tbl (key)`, &query.CreateTableStatement{
+			Create: pos(0),
+			Table:  pos(7),
+			Name: &query.MultiPartIdent{Name: &query.Ident{
+				Name:    "tbl",
+				NamePos: pos(13),
+				Tok:     query.IDENT,
+			}},
+			Lparen: pos(17),
+			Columns: []*query.ColumnDefinition{
+				{
+					Name: &query.Ident{NamePos: pos(18), Name: "key", Tok: query.IDENT},
+				},
+			},
+			Rparen: pos(21),
+		})
+
+		// With comments
+		AssertParseStatement(t, "CREATE TABLE tbl ( -- comment\n\tcol1 TEXT, -- comment\n\t  col2 TEXT)", &query.CreateTableStatement{
+			Create: pos(0),
+			Table:  pos(7),
+			Name: &query.MultiPartIdent{Name: &query.Ident{
+				Name:    "tbl",
+				NamePos: pos(13),
+				Tok:     query.IDENT,
+			}},
+			Lparen: pos(17),
+			Columns: []*query.ColumnDefinition{
+				{
+					Name: &query.Ident{NamePos: query.Pos{Offset: 31, Line: 2, Column: 2}, Name: "col1", Tok: query.IDENT},
+					Type: &query.Type{
+						Name: &query.Ident{NamePos: query.Pos{Offset: 36, Line: 2, Column: 7}, Name: "TEXT", Tok: query.IDENT},
+					},
+				},
+				{
+					Name: &query.Ident{NamePos: query.Pos{Offset: 56, Line: 3, Column: 4}, Name: "col2", Tok: query.IDENT},
+					Type: &query.Type{
+						Name: &query.Ident{NamePos: query.Pos{Offset: 61, Line: 3, Column: 9}, Name: "TEXT", Tok: query.IDENT},
+					},
+				},
+			},
+			Rparen: query.Pos{Offset: 65, Line: 3, Column: 13},
+		})
+
+		AssertParseStatementError(t, `CREATE TABLE`, `1:12: expected table name, found 'EOF'`)
+		AssertParseStatementError(t, `CREATE TABLE tbl `, `1:17: expected AS or left paren, found 'EOF'`)
+		AssertParseStatementError(t, `CREATE TABLE tbl (`, `1:18: expected column name, CONSTRAINT, or right paren, found 'EOF'`)
+		AssertParseStatementError(t, `CREATE TABLE tbl (col1 TEXT`, `1:27: expected column name, CONSTRAINT, or right paren, found 'EOF'`)
+
+		AssertParseStatement(t, `CREATE TABLE IF NOT EXISTS tbl (col1 TEXT)`, &query.CreateTableStatement{
+			Create:      pos(0),
+			Table:       pos(7),
+			If:          pos(13),
+			IfNot:       pos(16),
+			IfNotExists: pos(20),
+			Name: &query.MultiPartIdent{Name: &query.Ident{
+				Name:    "tbl",
+				NamePos: pos(27),
+				Tok:     query.IDENT,
+			}},
+			Lparen: pos(31),
+			Columns: []*query.ColumnDefinition{
+				{
+					Name: &query.Ident{NamePos: pos(32), Name: "col1", Tok: query.IDENT},
+					Type: &query.Type{
+						Name: &query.Ident{NamePos: pos(37), Name: "TEXT", Tok: query.IDENT},
+					},
+				},
+			},
+			Rparen: pos(41),
+		})
+
+		AssertParseStatement(t, `CREATE TABLE tbl (col1 TEXT, ts DATETIME)`, &query.CreateTableStatement{
+			Create: pos(0),
+			Table:  pos(7),
+			Name: &query.MultiPartIdent{Name: &query.Ident{
+				Name:    "tbl",
+				NamePos: pos(13),
+				Tok:     query.IDENT,
+			}},
+			Lparen: pos(17),
+			Columns: []*query.ColumnDefinition{
+				{
+					Name: &query.Ident{
+						NamePos: pos(18),
+						Name:    "col1",
+						Tok:     query.IDENT,
+					},
+					Type: &query.Type{
+						Name: &query.Ident{
+							NamePos: pos(23),
+							Name:    "TEXT",
+							Tok:     query.IDENT,
+						},
+					},
+				},
+				{
+					Name: &query.Ident{
+						NamePos: pos(29),
+						Name:    "ts",
+						Tok:     query.IDENT,
+					},
+					Type: &query.Type{
+						Name: &query.Ident{
+							NamePos: pos(32),
+							Name:    "DATETIME",
+							Tok:     query.IDENT,
+						},
+					},
+				},
+			},
+			Rparen: pos(40),
+		})
+
+		AssertParseStatement(t, "CREATE TABLE t (c1 CHARACTER VARYING, c2 UUID, c3 TIMESTAMP)", &query.CreateTableStatement{
+			Create: pos(0),
+			Table:  pos(7),
+			Name: &query.MultiPartIdent{Name: &query.Ident{
+				NamePos: pos(13),
+				Name:    "t",
+				Tok:     query.IDENT,
+			}},
+			Lparen: pos(15),
+			Columns: []*query.ColumnDefinition{
+				{
+					Name: &query.Ident{
+						NamePos: pos(16),
+						Name:    "c1",
+						Tok:     query.IDENT,
+					},
+					Type: &query.Type{
+						Name: &query.Ident{
+							NamePos: pos(19),
+							Name:    "CHARACTER VARYING",
+							Tok:     query.IDENT,
+						},
+					},
+				},
+				{
+					Name: &query.Ident{
+						NamePos: pos(38),
+						Name:    "c2",
+						Tok:     query.IDENT,
+					},
+					Type: &query.Type{
+						Name: &query.Ident{
+							NamePos: pos(41),
+							Name:    "UUID",
+							Tok:     query.IDENT,
+						},
+					},
+				},
+				{
+					Name: &query.Ident{
+						NamePos: pos(47),
+						Name:    "c3",
+						Tok:     query.IDENT,
+					},
+					Type: &query.Type{
+						Name: &query.Ident{
+							NamePos: pos(50),
+							Name:    "TIMESTAMP",
+							Tok:     query.TIMESTAMP,
+						},
+					},
+				},
+			},
+			Rparen: pos(59),
+		})
+
+		AssertParseStatement(t, "CREATE TABLE t (c1 NULL)", &query.CreateTableStatement{
+			Create: pos(0),
+			Table:  pos(7),
+			Name: &query.MultiPartIdent{Name: &query.Ident{
+				NamePos: pos(13),
+				Name:    "t",
+				Tok:     query.IDENT,
+			}},
+			Lparen: pos(15),
+			Columns: []*query.ColumnDefinition{
+				{
+					Name: &query.Ident{
+						NamePos: pos(16),
+						Name:    "c1",
+						Tok:     query.IDENT,
+					},
+					Type: &query.Type{
+						Name: &query.Ident{
+							NamePos: pos(19),
+							Name:    "NULL",
+						},
+					},
+				},
+			},
+			Rparen: pos(23),
+		})
+
+		AssertParseStatementError(t, `CREATE TABLE IF`, `1:15: expected NOT, found 'EOF'`)
+		AssertParseStatementError(t, `CREATE TABLE IF NOT`, `1:19: expected EXISTS, found 'EOF'`)
+		AssertParseStatementError(t, `CREATE TABLE tbl (col1`, `1:22: expected column name, CONSTRAINT, or right paren, found 'EOF'`)
+		AssertParseStatementError(t, `CREATE TABLE tbl (col1 DECIMAL(`, `1:31: expected precision, found 'EOF'`)
+		AssertParseStatementError(t, `CREATE TABLE tbl (col1 DECIMAL(-12,`, `1:35: expected scale, found 'EOF'`)
+		AssertParseStatementError(t, `CREATE TABLE tbl (col1 DECIMAL(1,2`, `1:34: expected right paren, found 'EOF'`)
+		AssertParseStatementError(t, `CREATE TABLE tbl (col1 DECIMAL(1`, `1:32: expected right paren, found 'EOF'`)
+
+		AssertParseStatement(t, `CREATE TABLE tbl AS SELECT foo`, &query.CreateTableStatement{
+			Create: pos(0),
+			Table:  pos(7),
+			Name: &query.MultiPartIdent{Name: &query.Ident{
+				Name:    "tbl",
+				NamePos: pos(13),
+				Tok:     query.IDENT,
+			}},
+			As: pos(17),
+			Select: &query.SelectStatement{
+				Select: pos(20),
+				Columns: []*query.ResultColumn{
+					{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(27), Name: "foo", Tok: query.IDENT}}},
+				},
+			},
+		})
+		AssertParseStatement(t, `CREATE TABLE tbl AS WITH cte (x) AS (SELECT y) SELECT foo`, &query.CreateTableStatement{
+			Create: pos(0),
+			Table:  pos(7),
+			Name: &query.MultiPartIdent{Name: &query.Ident{
+				Name:    "tbl",
+				NamePos: pos(13),
+				Tok:     query.IDENT,
+			}},
+			As: pos(17),
+			Select: &query.SelectStatement{
+				WithClause: &query.WithClause{
+					With: pos(20),
+					CTEs: []*query.CTE{
+						{
+							TableName:     &query.Ident{NamePos: pos(25), Name: "cte", Tok: query.IDENT},
+							ColumnsLparen: pos(29),
+							Columns: []*query.Ident{
+								{NamePos: pos(30), Name: "x", Tok: query.IDENT},
+							},
+							ColumnsRparen: pos(31),
+							As:            pos(33),
+							SelectLparen:  pos(36),
+							Select: &query.SelectStatement{
+								Select: pos(37),
+								Columns: []*query.ResultColumn{
+									{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(44), Name: "y", Tok: query.IDENT}}},
+								},
+							},
+							SelectRparen: pos(45),
+						},
+					},
+				},
+				Select: pos(47),
+				Columns: []*query.ResultColumn{
+					{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(54), Name: "foo", Tok: query.IDENT}}},
+				},
+			},
+		})
+		AssertParseStatementError(t, `CREATE TABLE tbl AS`, `1:19: expected SELECT or VALUES, found 'EOF'`)
+		AssertParseStatementError(t, `CREATE TABLE tbl AS WITH`, `1:24: expected table name, found 'EOF'`)
+
+		t.Run("WithComment", func(t *testing.T) {
+			t.Run("SingleLine", func(t *testing.T) {
+				AssertParseStatement(t, "CREATE TABLE tbl\n\t-- test one two\n\t(col1 TEXT)", &query.CreateTableStatement{
+					Create: pos(0),
+					Table:  pos(7),
+					Name:   &query.MultiPartIdent{Name: &query.Ident{Name: "tbl", Tok: query.IDENT, NamePos: query.Pos{Offset: 13, Line: 1, Column: 14}}},
+					Lparen: query.Pos{Offset: 35, Line: 3, Column: 2},
+					Columns: []*query.ColumnDefinition{
+						{
+							Name: &query.Ident{Name: "col1", NamePos: query.Pos{Offset: 36, Line: 3, Column: 3}, Tok: query.IDENT},
+							Type: &query.Type{
+								Name: &query.Ident{Name: "TEXT", NamePos: query.Pos{Offset: 41, Line: 3, Column: 8}, Tok: query.IDENT},
+							},
+						},
+					},
+					Rparen: query.Pos{Offset: 45, Line: 3, Column: 12},
+				})
+			})
+			t.Run("MultiLine", func(t *testing.T) {
+				AssertParseStatement(t, "CREATE TABLE tbl\n\t/* test one\ntwo */ (col1 TEXT)", &query.CreateTableStatement{
+					Create: pos(0),
+					Table:  pos(7),
+					Name:   &query.MultiPartIdent{Name: &query.Ident{Name: "tbl", Tok: query.IDENT, NamePos: query.Pos{Offset: 13, Line: 1, Column: 14}}},
+					Lparen: query.Pos{Offset: 37, Line: 3, Column: 8},
+					Columns: []*query.ColumnDefinition{
+						{
+							Name: &query.Ident{Name: "col1", Tok: query.IDENT, NamePos: query.Pos{Offset: 38, Line: 3, Column: 9}},
+							Type: &query.Type{
+								Name: &query.Ident{Name: "TEXT", Tok: query.IDENT, NamePos: query.Pos{Offset: 43, Line: 3, Column: 14}},
+							},
+						},
+					},
+					Rparen: query.Pos{Offset: 47, Line: 3, Column: 18},
+				})
+			})
+		})
+	})
 }

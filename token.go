@@ -165,7 +165,6 @@ const (
 	ISNOT
 	ISNULL // TODO: REMOVE?
 	JOIN
-	KEY
 	LATERAL
 	LAST
 	LEFT
@@ -380,7 +379,6 @@ var tokens = [...]string{
 	ISNOT:             "ISNOT",
 	ISNULL:            "ISNULL",
 	JOIN:              "JOIN",
-	KEY:               "KEY",
 	LATERAL:           "LATERAL",
 	LAST:              "LAST",
 	LEFT:              "LEFT",
@@ -538,6 +536,15 @@ func isExprIdentToken(tok Token) bool {
 	case REPLACE, LIKE, GLOB, IF:
 		return true
 	// Add any other non-reserved keywords here
+	default:
+		return false
+	}
+}
+
+func isTypeToken(tok Token) bool {
+	switch tok {
+	case IDENT, NULL, DATE, TIMESTAMP:
+		return true
 	default:
 		return false
 	}

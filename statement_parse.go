@@ -52,6 +52,10 @@ func (p *Parser) parseNonExplainStatement() (Statement, error) {
 		return p.parseDeclarationStatement()
 	case SET:
 		return p.parseSetStatement()
+	case CREATE:
+		return p.parseCreateStatement()
+	case DROP:
+		return p.parseDropStatement()
 	case SELECT, VALUES:
 		return p.parseSelectStatement(false, nil)
 	case INSERT, REPLACE:
@@ -494,4 +498,153 @@ func (p *Parser) parseAssignment() (_ *Assignment, err error) {
 	}
 
 	return &assignment, nil
+}
+func (p *Parser) parseCreateStatement() (Statement, error) {
+	assert(p.peek() == CREATE)
+	pos, tok, _ := p.scan()
+
+	switch p.peek() {
+	case TABLE:
+		return p.parseCreateTableStatement(pos)
+	default:
+		return nil, p.errorExpected(pos, tok, "TABLE in Create")
+	}
+}
+
+func (p *Parser) parseDropStatement() (Statement, error) {
+	assert(p.peek() == DROP)
+	pos, tok, _ := p.scan()
+
+	switch p.peek() {
+	case TABLE:
+		return p.parseDropTableStatement(pos)
+	default:
+		return nil, p.errorExpected(pos, tok, "TABLE, VIEW, INDEX, or TRIGGER")
+	}
+}
+
+func (p *Parser) parseCreateTableStatement(createPos Pos) (_ *CreateTableStatement, err error) {
+	assert(p.peek() == TABLE)
+
+	var stmt CreateTableStatement
+	stmt.Create = createPos
+	stmt.Table, _, _ = p.scan()
+
+	// Parse optional "IF NOT EXISTS".
+	if p.peek() == IF {
+		stmt.If, _, _ = p.scan()
+
+		pos, tok, _ := p.scan()
+		if tok != NOT {
+			return &stmt, p.errorExpected(pos, tok, "NOT")
+		}
+		stmt.IfNot = pos
+
+		pos, tok, _ = p.scan()
+		if tok != EXISTS {
+			return &stmt, p.errorExpected(pos, tok, "EXISTS")
+		}
+		stmt.IfNotExists = pos
+	}
+
+	// Parse the first identifier (either schema or table name)
+	firstIdent, err := p.parseIdent("table name")
+	if err != nil {
+		return &stmt, err
+	}
+	name, dotPos := p.parseMultiIdent(firstIdent)
+	if dotPos.IsValid() {
+		return nil, p.errorExpected(dotPos, p.tok, "extra dot in table name")
+	}
+	stmt.Name = name
+
+	// Parse either a column/constraint list or build table from "AS <select>".
+	switch p.peek() {
+	case LP:
+		stmt.Lparen, _, _ = p.scan()
+
+		if stmt.Columns, err = p.parseColumnDefinitions(); err != nil {
+			return &stmt, err
+		}
+
+		if p.peek() != RP {
+			return &stmt, p.errorExpected(p.pos, p.tok, "right paren")
+		}
+		stmt.Rparen, _, _ = p.scan()
+
+		return &stmt, nil
+	case AS:
+		stmt.As, _, _ = p.scan()
+		if stmt.Select, err = p.parseSelectStatement(false, nil); err != nil {
+			return &stmt, err
+		}
+		return &stmt, nil
+	default:
+		return &stmt, p.errorExpected(p.pos, p.tok, "AS or left paren")
+	}
+}
+
+func (p *Parser) parseDropTableStatement(dropPos Pos) (_ *DropTableStatement, err error) {
+	assert(p.peek() == TABLE)
+
+	var stmt DropTableStatement
+	stmt.Drop = dropPos
+	stmt.Table, _, _ = p.scan()
+
+	// Parse optional "IF EXISTS".
+	if p.peek() == IF {
+		stmt.If, _, _ = p.scan()
+		if p.peek() != EXISTS {
+			return &stmt, p.errorExpected(p.pos, p.tok, "EXISTS")
+		}
+		stmt.IfExists, _, _ = p.scan()
+	}
+
+	ident, err := p.parseIdent("table name")
+	if err != nil {
+		return &stmt, err
+	}
+	mIdent, dotPos := p.parseMultiIdent(ident)
+	if dotPos.IsValid() {
+		return nil, &Error{Pos: p.pos, Msg: "Found extra . in input"}
+	}
+	stmt.Name = mIdent
+
+	return &stmt, nil
+}
+
+func (p *Parser) parseColumnDefinitions() (_ []*ColumnDefinition, err error) {
+	var columns []*ColumnDefinition
+	for {
+		if tok := p.peek(); isIdentToken(tok) || isBareToken(tok) {
+			col, err := p.parseColumnDefinition()
+			columns = append(columns, col)
+			if err != nil {
+				return columns, err
+			}
+			if p.peek() == COMMA {
+				p.scan()
+			}
+		} else if tok == RP {
+			return columns, nil
+		} else {
+			return columns, p.errorExpected(p.pos, p.tok, "column name, CONSTRAINT, or right paren")
+		}
+	}
+}
+
+func (p *Parser) parseColumnDefinition() (_ *ColumnDefinition, err error) {
+	var col ColumnDefinition
+	if col.Name, err = p.parseIdent("column name"); err != nil {
+		return &col, err
+	}
+
+	tok := p.peek()
+	if isTypeToken(tok) {
+		if col.Type, err = p.parseType(); err != nil {
+			return &col, err
+		}
+	}
+
+	return &col, nil
 }
