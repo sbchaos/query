@@ -52,6 +52,8 @@ func (p *Parser) parseNonExplainStatement() (Statement, error) {
 		return p.parseDeclarationStatement()
 	case SET:
 		return p.parseSetStatement()
+	case MERGE:
+		return p.parseMergeStatement()
 	case CREATE:
 		return p.parseCreateStatement()
 	case DROP:
@@ -154,16 +156,12 @@ func (p *Parser) parseInsertStatement(withClause *WithClause) (_ *InsertStatemen
 		stmt.TablePos, _, _ = p.scan()
 	}
 
-	// Parse table name & optional alias.
-	ident, err := p.parseIdent("table name")
+	mIdent, err := p.parseMultiPartIdent()
 	if err != nil {
 		return nil, err
 	}
-	mIdent, dotPos := p.parseMultiIdent(ident)
-	if dotPos.IsValid() {
-		return &stmt, err
-	}
 	stmt.Table = mIdent
+
 	if p.peek() == AS {
 		stmt.As, _, _ = p.scan()
 		if stmt.Alias, err = p.parseIdent("alias"); err != nil {
@@ -393,7 +391,7 @@ func (p *Parser) parseDeleteStatement(withClause *WithClause) (_ *DeleteStatemen
 		return nil, p.errorExpected(p.pos, p.tok, "table name")
 	}
 	ident, _ := p.parseIdent("table name")
-	if stmt.Table, err = p.parseQualifiedTableName(ident, true, true); err != nil {
+	if stmt.Table, err = p.parseQualifiedTableName(ident, true); err != nil {
 		return &stmt, err
 	}
 
@@ -465,12 +463,15 @@ func (p *Parser) parseAssignment() (_ *Assignment, err error) {
 
 	// Parse either a single column (IDENT) or a column list (LP IDENT COMMA IDENT RP)
 	if isIdentToken(p.peek()) {
-		col, _ := p.parseIdent("column name")
-		assignment.Columns = []*Ident{col}
+		ident, err := p.parseMultiPartIdent()
+		if err != nil {
+			return &assignment, err
+		}
+		assignment.Columns = append(assignment.Columns, ident)
 	} else if p.peek() == LP {
 		assignment.Lparen, _, _ = p.scan()
 		for {
-			col, err := p.parseIdent("column name")
+			col, err := p.parseMultiPartIdent()
 			if err != nil {
 				return &assignment, err
 			}
@@ -499,6 +500,7 @@ func (p *Parser) parseAssignment() (_ *Assignment, err error) {
 
 	return &assignment, nil
 }
+
 func (p *Parser) parseCreateStatement() (Statement, error) {
 	assert(p.peek() == CREATE)
 	pos, tok, _ := p.scan()
@@ -547,16 +549,11 @@ func (p *Parser) parseCreateTableStatement(createPos Pos) (_ *CreateTableStateme
 		stmt.IfNotExists = pos
 	}
 
-	// Parse the first identifier (either schema or table name)
-	firstIdent, err := p.parseIdent("table name")
+	mIdent, err := p.parseMultiPartIdent()
 	if err != nil {
-		return &stmt, err
+		return nil, err
 	}
-	name, dotPos := p.parseMultiIdent(firstIdent)
-	if dotPos.IsValid() {
-		return nil, p.errorExpected(dotPos, p.tok, "extra dot in table name")
-	}
-	stmt.Name = name
+	stmt.Name = mIdent
 
 	// Parse either a column/constraint list or build table from "AS <select>".
 	switch p.peek() {
@@ -600,13 +597,9 @@ func (p *Parser) parseDropTableStatement(dropPos Pos) (_ *DropTableStatement, er
 		stmt.IfExists, _, _ = p.scan()
 	}
 
-	ident, err := p.parseIdent("table name")
+	mIdent, err := p.parseMultiPartIdent()
 	if err != nil {
-		return &stmt, err
-	}
-	mIdent, dotPos := p.parseMultiIdent(ident)
-	if dotPos.IsValid() {
-		return nil, &Error{Pos: p.pos, Msg: "Found extra . in input"}
+		return nil, err
 	}
 	stmt.Name = mIdent
 
@@ -647,4 +640,138 @@ func (p *Parser) parseColumnDefinition() (_ *ColumnDefinition, err error) {
 	}
 
 	return &col, nil
+}
+
+func (p *Parser) parseMergeStatement() (Statement, error) {
+	assert(p.peek() == MERGE)
+
+	var stmt MergeStatement
+	stmt.Merge, _, _ = p.scan()
+
+	if p.peek() != INTO {
+		return &stmt, p.errorExpected(p.pos, p.tok, "INTO after Merge")
+	}
+	stmt.Into, _, _ = p.scan()
+
+	trgt, err := p.parseSource()
+	if err != nil {
+		return &stmt, err
+	}
+	stmt.Target = trgt
+
+	if p.peek() != USING {
+		return &stmt, p.errorExpected(p.pos, p.tok, "USING for Merge")
+	}
+	stmt.Using, _, _ = p.scan()
+
+	src, err := p.parseSource()
+	if err != nil {
+		return &stmt, err
+	}
+
+	stmt.Source = src
+
+	if p.peek() != ON {
+		return &stmt, p.errorExpected(p.pos, p.tok, "ON for Merge")
+	}
+	stmt.On, _, _ = p.scan()
+
+	if stmt.OnExpr, err = p.ParseExpr(); err != nil {
+		return &stmt, err
+	}
+
+	for p.peek() == WHEN {
+		m1, err := p.parseMatchedCondition()
+		if err != nil {
+			return &stmt, err
+		}
+		stmt.Matched = append(stmt.Matched, m1)
+	}
+
+	return &stmt, nil
+}
+
+func (p *Parser) parseMatchedCondition() (*MatchedCondition, error) {
+	assert(p.peek() == WHEN)
+
+	var stmt MatchedCondition
+	stmt.When, _, _ = p.scan()
+
+	if p.peek() == NOT {
+		stmt.Not, _, _ = p.scan()
+	}
+
+	if p.peek() != MATCHED {
+		return &stmt, p.errorExpected(p.pos, p.tok, "MATCHED")
+	}
+	stmt.Matched, _, _ = p.scan()
+
+	if p.peek() == AND {
+		stmt.And, _, _ = p.scan()
+		exp, err := p.ParseExpr()
+		if err != nil {
+			return &stmt, err
+		}
+		stmt.AndExpr = exp
+	}
+
+	if p.peek() != THEN {
+		return &stmt, p.errorExpected(p.pos, p.tok, "THEN")
+	}
+	stmt.Then, _, _ = p.scan()
+
+	if p.peek() == DELETE {
+		stmt.Delete, _, _ = p.scan()
+		return &stmt, nil
+	}
+
+	if p.peek() == UPDATE {
+		// Otherwise parse "UPDATE SET"
+		stmt.Update, _, _ = p.scan()
+		if p.peek() != SET {
+			return &stmt, p.errorExpected(p.pos, p.tok, "SET")
+		}
+		stmt.UpdateSet, _, _ = p.scan()
+
+		// Parse list of assignments.
+		for {
+			assignment, err := p.parseAssignment()
+			if err != nil {
+				return &stmt, err
+			}
+			stmt.Assignments = append(stmt.Assignments, assignment)
+
+			if p.peek() != COMMA {
+				break
+			}
+			p.scan()
+		}
+		return &stmt, nil
+	}
+
+	if p.peek() == INSERT {
+		stmt.Insert, _, _ = p.scan()
+
+		if p.peek() == LP {
+			cols, err := p.parseExprList()
+			if err != nil {
+				return &stmt, err
+			}
+			stmt.ColList = cols
+		}
+
+		if p.peek() != VALUES {
+			return &stmt, p.errorExpected(p.pos, p.tok, "VALUES in Matched")
+		}
+		stmt.Values, _, _ = p.scan()
+
+		vals, err := p.parseExprList()
+		if err != nil {
+			return &stmt, err
+		}
+		stmt.ValueLists = vals
+		return &stmt, nil
+	}
+
+	return &stmt, p.errorExpected(p.pos, p.tok, "DELETE, UPDATE, INSERT or VALUES")
 }

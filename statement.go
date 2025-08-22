@@ -11,6 +11,7 @@ func (*InsertStatement) node()      {}
 func (*SetStatement) node()         {}
 func (*CreateTableStatement) node() {}
 func (*DropTableStatement) node()   {}
+func (*MergeStatement) node()       {}
 
 type Statement interface {
 	Node
@@ -23,6 +24,7 @@ func (*InsertStatement) stmt()      {}
 func (*SetStatement) stmt()         {}
 func (*CreateTableStatement) stmt() {}
 func (*DropTableStatement) stmt()   {}
+func (*MergeStatement) stmt()       {}
 
 // CloneStatement returns a deep copy stmt.
 func CloneStatement(stmt Statement) Statement {
@@ -371,11 +373,11 @@ func (s *DeleteStatement) String() string {
 // Assignment is used within the UPDATE statement & upsert clause.
 // It is similiar to an expression except that it must be an equality.
 type Assignment struct {
-	Lparen  Pos      // position of column list left paren
-	Columns []*Ident // column list
-	Rparen  Pos      // position of column list right paren
-	Eq      Pos      // position of =
-	Expr    Expr     // assigned expression
+	Lparen  Pos               // position of column list left paren
+	Columns []*MultiPartIdent // column list
+	Rparen  Pos               // position of column list right paren
+	Eq      Pos               // position of =
+	Expr    Expr              // assigned expression
 }
 
 // Clone returns a deep copy of a.
@@ -384,7 +386,7 @@ func (a *Assignment) Clone() *Assignment {
 		return nil
 	}
 	other := *a
-	other.Columns = cloneIdents(a.Columns)
+	//other.Columns = cloneIdents(a.Columns)
 	other.Expr = CloneExpr(a.Expr)
 	return &other
 }
@@ -591,4 +593,52 @@ func (s *DropTableStatement) String() string {
 	}
 	fmt.Fprintf(&buf, " %s", s.Name.String())
 	return buf.String()
+}
+
+type MatchedCondition struct {
+	When    Pos
+	Not     Pos
+	Matched Pos
+
+	And     Pos
+	AndExpr Expr
+	Then    Pos
+
+	Update      Pos
+	UpdateSet   Pos
+	Assignments []*Assignment // list of column assignments
+
+	Delete Pos
+
+	Insert     Pos
+	ColList    *ExprList
+	Values     Pos       // position of VALUES keyword
+	ValueLists *ExprList // lists of values
+}
+
+type MergeStatement struct {
+	Merge Pos // Position of Merge
+	Into  Pos // Positon of Into
+
+	Target Source
+	Using  Pos
+	Source Source
+
+	On     Pos
+	OnExpr Expr
+
+	Matched []*MatchedCondition
+}
+
+func (s *MergeStatement) Clone() *MergeStatement {
+	// TODO: DELETE clone statements
+	if s == nil {
+		return nil
+	}
+	other := *s
+	return &other
+}
+
+func (s *MergeStatement) String() string {
+	return "MergeStatement"
 }

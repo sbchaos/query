@@ -527,10 +527,10 @@ func (p *Parser) parseQualifiedTable(aliasOK, indexedOK bool) (_ Source, err err
 	if p.peek() == LP {
 		return p.parseQualifiedTableFunctionName(ident)
 	}
-	return p.parseQualifiedTableName(ident, aliasOK, indexedOK)
+	return p.parseQualifiedTableName(ident, aliasOK)
 }
 
-func (p *Parser) parseQualifiedTableName(ident *Ident, aliasOK, indexedOK bool) (_ *QualifiedTableName, err error) {
+func (p *Parser) parseQualifiedTableName(ident *Ident, aliasOK bool) (_ *QualifiedTableName, err error) {
 	var tbl QualifiedTableName
 	mIdent, dotPos := p.parseMultiIdent(ident)
 	if dotPos.IsValid() {

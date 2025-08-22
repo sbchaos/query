@@ -573,17 +573,15 @@ func TestParser_ParseStatement2(t *testing.T) {
 				DoUpdateSet: pos(68),
 				Assignments: []*query.Assignment{
 					{
-						Columns: []*query.Ident{
-							{NamePos: pos(72), Name: "foo", Tok: query.IDENT},
-						},
-						Eq:   pos(76),
-						Expr: &query.NumberLit{ValuePos: pos(78), Value: "1"},
+						Columns: []*query.MultiPartIdent{{Name: &query.Ident{NamePos: pos(72), Name: "foo", Tok: query.IDENT}}},
+						Eq:      pos(76),
+						Expr:    &query.NumberLit{ValuePos: pos(78), Value: "1"},
 					},
 					{
 						Lparen: pos(81),
-						Columns: []*query.Ident{
-							{NamePos: pos(82), Name: "bar", Tok: query.IDENT},
-							{NamePos: pos(87), Name: "baz", Tok: query.IDENT},
+						Columns: []*query.MultiPartIdent{
+							{Name: &query.Ident{NamePos: pos(82), Name: "bar", Tok: query.IDENT}},
+							{Name: &query.Ident{NamePos: pos(87), Name: "baz", Tok: query.IDENT}},
 						},
 						Rparen: pos(90),
 						Eq:     pos(92),
@@ -1155,6 +1153,100 @@ func TestParser_ParseStatement2(t *testing.T) {
 					Rparen: query.Pos{Offset: 47, Line: 3, Column: 18},
 				})
 			})
+		})
+	})
+
+	t.Run("MergeStatement", func(t *testing.T) {
+		AssertParseStatement(t, `MERGE INTO tbl1 target_table USING source_tbl src ON target_table.id = src.id
+WHEN MATCHED THEN UPDATE SET target_table.place = src.place
+WHEN NOT MATCHED THEN INSERT (id, place) VALUES (src.id, src.place);`, &query.MergeStatement{
+			Merge: pos(0),
+			Into:  pos(6),
+			Target: &query.QualifiedTableName{
+				Name:  &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(11), Name: "tbl1", Tok: query.IDENT}},
+				Alias: &query.Ident{NamePos: pos(16), Name: "target_table", Tok: query.IDENT},
+			},
+			Using: pos(29),
+			Source: &query.QualifiedTableName{
+				Name:  &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(35), Name: "source_tbl", Tok: query.IDENT}},
+				Alias: &query.Ident{NamePos: pos(46), Name: "src", Tok: query.IDENT},
+			},
+			On: pos(50),
+			OnExpr: &query.BinaryExpr{
+				X: &query.MultiPartIdent{
+					First: &query.Ident{NamePos: pos(53), Name: "target_table", Tok: query.IDENT},
+					Dot1:  pos(65),
+					Name:  &query.Ident{NamePos: pos(66), Name: "id", Tok: query.IDENT}},
+				Y: &query.MultiPartIdent{
+					First: &query.Ident{NamePos: pos(71), Name: "src", Tok: query.IDENT},
+					Dot1:  pos(74),
+					Name:  &query.Ident{NamePos: pos(75), Name: "id", Tok: query.IDENT}},
+				Op:    query.EQ,
+				OpPos: pos(69),
+			},
+			Matched: []*query.MatchedCondition{
+				{
+					When:      query.Pos{Offset: 78, Line: 2, Column: 1},
+					Matched:   query.Pos{Offset: 83, Line: 2, Column: 6},
+					Then:      query.Pos{Offset: 91, Line: 2, Column: 14},
+					Update:    query.Pos{Offset: 96, Line: 2, Column: 19},
+					UpdateSet: query.Pos{Offset: 103, Line: 2, Column: 26},
+					Assignments: []*query.Assignment{
+						{
+							Columns: []*query.MultiPartIdent{
+								{
+									First: &query.Ident{
+										NamePos: query.Pos{Offset: 107, Line: 2, Column: 30}, Name: "target_table", Tok: query.IDENT},
+									Dot1: query.Pos{Offset: 119, Line: 2, Column: 42},
+									Name: &query.Ident{NamePos: query.Pos{Offset: 120, Line: 2, Column: 43}, Name: "place", Tok: query.IDENT},
+								},
+							},
+							Eq: query.Pos{Offset: 126, Line: 2, Column: 49},
+							Expr: &query.MultiPartIdent{
+								First: &query.Ident{NamePos: query.Pos{Offset: 128, Line: 2, Column: 51}, Name: "src", Tok: query.IDENT},
+								Dot1:  query.Pos{Offset: 131, Line: 2, Column: 54},
+								Name:  &query.Ident{NamePos: query.Pos{Offset: 132, Line: 2, Column: 55}, Name: "place", Tok: query.IDENT},
+							},
+						},
+					},
+				},
+				{
+					When:    query.Pos{Offset: 138, Line: 3, Column: 1},
+					Not:     query.Pos{Offset: 143, Line: 3, Column: 6},
+					Matched: query.Pos{Offset: 147, Line: 3, Column: 10},
+					Then:    query.Pos{Offset: 155, Line: 3, Column: 18},
+					Insert:  query.Pos{Offset: 160, Line: 3, Column: 23},
+					Values:  query.Pos{Offset: 179, Line: 3, Column: 42},
+					ColList: &query.ExprList{
+						Lparen: query.Pos{Offset: 167, Line: 3, Column: 30},
+						Rparen: query.Pos{Offset: 177, Line: 3, Column: 40},
+						Exprs: []query.Expr{
+							&query.MultiPartIdent{
+								Name: &query.Ident{NamePos: query.Pos{Offset: 168, Line: 3, Column: 31}, Name: "id", Tok: query.IDENT},
+							},
+							&query.MultiPartIdent{
+								Name: &query.Ident{NamePos: query.Pos{Offset: 172, Line: 3, Column: 35}, Name: "place", Tok: query.IDENT},
+							},
+						},
+					},
+					ValueLists: &query.ExprList{
+						Lparen: query.Pos{Offset: 186, Line: 3, Column: 49},
+						Rparen: query.Pos{Offset: 204, Line: 3, Column: 67},
+						Exprs: []query.Expr{
+							&query.MultiPartIdent{
+								First: &query.Ident{NamePos: query.Pos{Offset: 187, Line: 3, Column: 50}, Name: "src", Tok: query.IDENT},
+								Dot1:  query.Pos{Offset: 190, Line: 3, Column: 53},
+								Name:  &query.Ident{NamePos: query.Pos{Offset: 191, Line: 3, Column: 54}, Name: "id", Tok: query.IDENT},
+							},
+							&query.MultiPartIdent{
+								First: &query.Ident{NamePos: query.Pos{Offset: 195, Line: 3, Column: 58}, Name: "src", Tok: query.IDENT},
+								Dot1:  query.Pos{Offset: 198, Line: 3, Column: 61},
+								Name:  &query.Ident{NamePos: query.Pos{Offset: 199, Line: 3, Column: 62}, Name: "place", Tok: query.IDENT},
+							},
+						},
+					},
+				},
+			},
 		})
 	})
 }

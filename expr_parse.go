@@ -87,6 +87,19 @@ func (p *Parser) parseIdent(desc string) (*Ident, error) {
 	}
 }
 
+func (p *Parser) parseMultiPartIdent() (*MultiPartIdent, error) {
+	ident, err := p.parseIdent("table name")
+	if err != nil {
+		return nil, err
+	}
+	mIdent, dotPos := p.parseMultiIdent(ident)
+	if dotPos.IsValid() {
+		return nil, &Error{Pos: p.pos, Msg: "Found extra . in input"}
+	}
+
+	return mIdent, nil
+}
+
 func (p *Parser) parseType() (_ *Type, err error) {
 	var typ Type
 	for {
