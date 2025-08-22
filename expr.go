@@ -45,83 +45,11 @@ func (*QualifiedRef) expr()   {}
 func (*UnaryExpr) expr()      {}
 func (SelectExpr) expr()      {}
 
-// CloneExpr returns a deep copy expr.
-func CloneExpr(expr Expr) Expr {
-	if expr == nil {
-		return nil
-	}
-
-	switch expr := expr.(type) {
-	case *BinaryExpr:
-		return expr.Clone()
-	case *BlobLit:
-		return expr.Clone()
-	case *BoolLit:
-		return expr.Clone()
-	case *Call:
-		return expr.Clone()
-	case *CaseExpr:
-		return expr.Clone()
-	case *CastExpr:
-		return expr.Clone()
-	case *Null:
-		return expr.Clone()
-	case *ExprList:
-		return expr.Clone()
-	case *Ident:
-		return expr.Clone()
-	case *MultiPartIdent:
-		return expr.Clone()
-	case *NullLit:
-		return expr.Clone()
-	case *NumberLit:
-		return expr.Clone()
-	case *ParenExpr:
-		return expr.Clone()
-	case *Range:
-		return expr.Clone()
-	case *QualifiedRef:
-		return expr.Clone()
-	case *StringLit:
-		return expr.Clone()
-	case *TimestampLit:
-		return expr.Clone()
-	case *UnaryExpr:
-		return expr.Clone()
-	case SelectExpr:
-		return expr.Clone()
-	default:
-		panic(fmt.Sprintf("invalid expr type: %T", expr))
-	}
-}
-
-func cloneExprs(a []Expr) []Expr {
-	if a == nil {
-		return nil
-	}
-	other := make([]Expr, len(a))
-	for i := range a {
-		other[i] = CloneExpr(a[i])
-	}
-	return other
-}
-
 type BinaryExpr struct {
 	X     Expr  // lhs
 	OpPos Pos   // position of Op
 	Op    Token // operator
 	Y     Expr  // rhs
-}
-
-// Clone returns a deep copy of expr.
-func (expr *BinaryExpr) Clone() *BinaryExpr {
-	if expr == nil {
-		return nil
-	}
-	other := *expr
-	other.X = CloneExpr(expr.X)
-	other.Y = CloneExpr(expr.Y)
-	return &other
 }
 
 // String returns the string representation of the expression.
@@ -212,17 +140,6 @@ type Call struct {
 	Over     *OverClause     // over clause
 }
 
-// Clone returns a deep copy of c.
-func (c *Call) Clone() *Call {
-	if c == nil {
-		return nil
-	}
-	other := *c
-	other.Name = c.Name.Clone()
-	other.Args = cloneExprs(c.Args)
-	return &other
-}
-
 // String returns the string representation of the expression.
 func (c *Call) String() string {
 	var buf bytes.Buffer
@@ -258,17 +175,6 @@ type CastExpr struct {
 	Rparen Pos   // position of right paren
 }
 
-// Clone returns a deep copy of expr.
-func (expr *CastExpr) Clone() *CastExpr {
-	if expr == nil {
-		return nil
-	}
-	other := *expr
-	other.X = CloneExpr(expr.X)
-	other.Type = expr.Type.Clone()
-	return &other
-}
-
 // String returns the string representation of the expression.
 func (expr *CastExpr) String() string {
 	return fmt.Sprintf("CAST(%s AS %s)", expr.X.String(), expr.Type.String())
@@ -280,18 +186,6 @@ type Type struct {
 	Precision *NumberLit // precision (optional)
 	Scale     *NumberLit // scale (optional)
 	Rparen    Pos        // position of right paren (optional)
-}
-
-// Clone returns a deep copy of t.
-func (t *Type) Clone() *Type {
-	if t == nil {
-		return nil
-	}
-	other := *t
-	other.Name = t.Name.Clone()
-	other.Precision = t.Precision.Clone()
-	other.Scale = t.Scale.Clone()
-	return &other
 }
 
 // String returns the string representation of the type.
@@ -311,18 +205,6 @@ type CaseExpr struct {
 	Else     Pos          // position of ELSE keyword
 	ElseExpr Expr         // expression used by default case
 	End      Pos          // position of END keyword
-}
-
-// Clone returns a deep copy of expr.
-func (expr *CaseExpr) Clone() *CaseExpr {
-	if expr == nil {
-		return nil
-	}
-	other := *expr
-	other.Operand = CloneExpr(expr.Operand)
-	other.Blocks = cloneCaseBlocks(expr.Blocks)
-	other.ElseExpr = CloneExpr(expr.ElseExpr)
-	return &other
 }
 
 // String returns the string representation of the expression.
@@ -352,28 +234,6 @@ type CaseBlock struct {
 	Body      Expr // result expression
 }
 
-// Clone returns a deep copy of blk.
-func (b *CaseBlock) Clone() *CaseBlock {
-	if b == nil {
-		return nil
-	}
-	other := *b
-	other.Condition = CloneExpr(b.Condition)
-	other.Body = CloneExpr(b.Body)
-	return &other
-}
-
-func cloneCaseBlocks(a []*CaseBlock) []*CaseBlock {
-	if a == nil {
-		return nil
-	}
-	other := make([]*CaseBlock, len(a))
-	for i := range a {
-		other[i] = a[i].Clone()
-	}
-	return other
-}
-
 // String returns the string representation of the block.
 func (b *CaseBlock) String() string {
 	return fmt.Sprintf("WHEN %s THEN %s", b.Condition.String(), b.Body.String())
@@ -383,16 +243,6 @@ type Null struct {
 	X     Expr  // expression being checked for null
 	Op    Token // IS or NOT token
 	OpPos Pos   // position of NOT NULL postfix operation
-}
-
-// Clone returns a deep copy of expr.
-func (expr *Null) Clone() *Null {
-	if expr == nil {
-		return nil
-	}
-	other := *expr
-	other.X = CloneExpr(expr.X)
-	return &other
 }
 
 // String returns the string representation of the expression.
@@ -415,27 +265,6 @@ type ExprList struct {
 	Rparen Pos    // position of right paren
 }
 
-// Clone returns a deep copy of l.
-func (l *ExprList) Clone() *ExprList {
-	if l == nil {
-		return nil
-	}
-	other := *l
-	other.Exprs = cloneExprs(l.Exprs)
-	return &other
-}
-
-func cloneExprLists(a []*ExprList) []*ExprList {
-	if a == nil {
-		return nil
-	}
-	other := make([]*ExprList, len(a))
-	for i := range a {
-		other[i] = a[i].Clone()
-	}
-	return other
-}
-
 // String returns the string representation of the expression.
 func (l *ExprList) String() string {
 	var buf bytes.Buffer
@@ -456,17 +285,6 @@ type MultiPartIdent struct {
 	Second *Ident // Second Segment (Optional)
 	Dot2   Pos    // position of dot after 2nd
 	Name   *Ident // table name
-}
-
-func (m *MultiPartIdent) Clone() *MultiPartIdent {
-	if m == nil {
-		return nil
-	}
-	other := *m
-	other.First = m.First.Clone()
-	other.Second = m.Second.Clone()
-	other.Name = m.Name.Clone()
-	return &other
 }
 
 // String returns the string representation of the expression.
@@ -496,26 +314,6 @@ type Ident struct {
 	NamePos Pos    // identifier position
 	Name    string // identifier name
 	Tok     Token  // Token type - BIND, IDENT, TMPL
-}
-
-// Clone returns a deep copy of i.
-func (i *Ident) Clone() *Ident {
-	if i == nil {
-		return nil
-	}
-	other := *i
-	return &other
-}
-
-func cloneIdents(a []*Ident) []*Ident {
-	if a == nil {
-		return nil
-	}
-	other := make([]*Ident, len(a))
-	for i := range a {
-		other[i] = a[i].Clone()
-	}
-	return other
 }
 
 // String returns the string representation of the expression.
@@ -550,16 +348,6 @@ type ParenExpr struct {
 	Rparen Pos  // position of right paren
 }
 
-// Clone returns a deep copy of expr.
-func (expr *ParenExpr) Clone() *ParenExpr {
-	if expr == nil {
-		return nil
-	}
-	other := *expr
-	other.X = CloneExpr(expr.X)
-	return &other
-}
-
 // String returns the string representation of the expression.
 func (expr *ParenExpr) String() string {
 	return fmt.Sprintf("(%s)", expr.X.String())
@@ -571,17 +359,6 @@ type Range struct {
 	Y   Expr // rhs expression
 }
 
-// Clone returns a deep copy of r.
-func (r *Range) Clone() *Range {
-	if r == nil {
-		return nil
-	}
-	other := *r
-	other.X = CloneExpr(r.X)
-	other.Y = CloneExpr(r.Y)
-	return &other
-}
-
 // String returns the string representation of the expression.
 func (r *Range) String() string {
 	return fmt.Sprintf("%s AND %s", r.X.String(), r.Y.String())
@@ -591,16 +368,6 @@ type QualifiedRef struct {
 	Name *MultiPartIdent // table name
 	Dot  Pos             // position of dot for *
 	Star Pos             // position of * (result column only)
-}
-
-// Clone returns a deep copy of r.
-func (r *QualifiedRef) Clone() *QualifiedRef {
-	if r == nil {
-		return nil
-	}
-	other := *r
-	other.Name = r.Name.Clone()
-	return &other
 }
 
 // String returns the string representation of the expression.
@@ -615,16 +382,6 @@ type UnaryExpr struct {
 	OpPos Pos   // operation position
 	Op    Token // operation
 	X     Expr  // target expression
-}
-
-// Clone returns a deep copy of expr.
-func (expr *UnaryExpr) Clone() *UnaryExpr {
-	if expr == nil {
-		return nil
-	}
-	other := *expr
-	other.X = CloneExpr(expr.X)
-	return &other
 }
 
 // String returns the string representation of the expression.
@@ -646,9 +403,4 @@ func (expr *UnaryExpr) String() string {
 // SelectExpr represents a SELECT statement inside an expression.
 type SelectExpr struct {
 	*SelectStatement
-}
-
-// Clone returns a deep copy of expr.
-func (expr SelectExpr) Clone() SelectExpr {
-	return SelectExpr{expr.SelectStatement.Clone()}
 }

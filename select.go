@@ -63,29 +63,6 @@ type SelectStatement struct {
 	OffsetExpr  Expr // offset expression
 }
 
-// Clone returns a deep copy of s.
-func (s *SelectStatement) Clone() *SelectStatement {
-	if s == nil {
-		return nil
-	}
-	other := *s
-	other.WithClause = s.WithClause.Clone()
-	other.ValueLists = cloneExprLists(s.ValueLists)
-	other.Columns = cloneResultColumns(s.Columns)
-	other.Source = CloneSource(s.Source)
-	other.WhereExpr = CloneExpr(s.WhereExpr)
-	other.GroupByExprs = cloneExprs(s.GroupByExprs)
-	other.GroupingExpr = CloneExpr(s.GroupingExpr)
-	other.HavingExpr = CloneExpr(s.HavingExpr)
-	other.QualifyExpr = CloneExpr(s.QualifyExpr)
-	other.Windows = cloneWindows(s.Windows)
-	other.Compound = s.Compound.Clone()
-	other.OrderingTerms = cloneOrderingTerms(s.OrderingTerms)
-	other.LimitExpr = CloneExpr(s.LimitExpr)
-	other.OffsetExpr = CloneExpr(s.OffsetExpr)
-	return &other
-}
-
 // String returns the string representation of the statement.
 func (s *SelectStatement) String() string {
 	var buf bytes.Buffer
@@ -211,16 +188,6 @@ type WithClause struct {
 	CTEs      []*CTE // common table expressions
 }
 
-// Clone returns a deep copy of c.
-func (c *WithClause) Clone() *WithClause {
-	if c == nil {
-		return nil
-	}
-	other := *c
-	other.CTEs = cloneCTEs(c.CTEs)
-	return &other
-}
-
 // String returns the string representation of the clause.
 func (c *WithClause) String() string {
 	var buf bytes.Buffer
@@ -249,29 +216,6 @@ type CTE struct {
 	SelectLparen  Pos              // position of select left paren
 	Select        *SelectStatement // select statement
 	SelectRparen  Pos              // position of select right paren
-}
-
-// Clone returns a deep copy of cte.
-func (cte *CTE) Clone() *CTE {
-	if cte == nil {
-		return nil
-	}
-	other := *cte
-	other.TableName = cte.TableName.Clone()
-	other.Columns = cloneIdents(cte.Columns)
-	other.Select = cte.Select.Clone()
-	return &other
-}
-
-func cloneCTEs(a []*CTE) []*CTE {
-	if a == nil {
-		return nil
-	}
-	other := make([]*CTE, len(a))
-	for i := range a {
-		other[i] = a[i].Clone()
-	}
-	return other
 }
 
 // String returns the string representation of the CTE.
@@ -305,29 +249,6 @@ type ResultColumn struct {
 	ExceptCol Expr
 }
 
-// Clone returns a deep copy of c.
-func (c *ResultColumn) Clone() *ResultColumn {
-	if c == nil {
-		return nil
-	}
-	other := *c
-	other.Expr = CloneExpr(c.Expr)
-	other.Alias = c.Alias.Clone()
-	other.ExceptCol = CloneExpr(c.ExceptCol)
-	return &other
-}
-
-func cloneResultColumns(a []*ResultColumn) []*ResultColumn {
-	if a == nil {
-		return nil
-	}
-	other := make([]*ResultColumn, len(a))
-	for i := range a {
-		other[i] = a[i].Clone()
-	}
-	return other
-}
-
 // String returns the string representation of the column.
 func (c *ResultColumn) String() string {
 	if c.Star.IsValid() {
@@ -353,28 +274,6 @@ func (*ParenSource) source()                {}
 func (*QualifiedTableName) source()         {}
 func (*QualifiedTableFunctionName) source() {}
 func (*SelectStatement) source()            {}
-
-// CloneSource returns a deep copy src.
-func CloneSource(src Source) Source {
-	if src == nil {
-		return nil
-	}
-
-	switch src := src.(type) {
-	case *JoinClause:
-		return src.Clone()
-	case *ParenSource:
-		return src.Clone()
-	case *QualifiedTableName:
-		return src.Clone()
-	case *QualifiedTableFunctionName:
-		return src.Clone()
-	case *SelectStatement:
-		return src.Clone()
-	default:
-		panic(fmt.Sprintf("invalid source type: %T", src))
-	}
-}
 
 // SourceName returns the name of the source.
 // Only returns for QualifiedTableName & ParenSource.
@@ -462,29 +361,6 @@ type LateralView struct {
 	ColAlias   []*Ident
 }
 
-func (l *LateralView) Clone() *LateralView {
-	if l == nil {
-		return nil
-	}
-
-	other := *l
-	other.Udtf = l.Udtf.Clone()
-	other.TableAlias = l.TableAlias.Clone()
-	other.ColAlias = cloneIdents(l.ColAlias)
-	return &other
-}
-
-func cloneLateralViews(a []*LateralView) []*LateralView {
-	if a == nil {
-		return nil
-	}
-	other := make([]*LateralView, len(a))
-	for i := range a {
-		other[i] = a[i].Clone()
-	}
-	return other
-}
-
 func (l *LateralView) String() string {
 	var buf bytes.Buffer
 
@@ -531,18 +407,6 @@ func (n *QualifiedTableName) TableName() string {
 	return MIdentName(n.Name)
 }
 
-// Clone returns a deep copy of n.
-func (n *QualifiedTableName) Clone() *QualifiedTableName {
-	if n == nil {
-		return nil
-	}
-	other := *n
-	other.Name = n.Name.Clone()
-	other.Alias = n.Alias.Clone()
-	other.LateralViews = cloneLateralViews(n.LateralViews)
-	return &other
-}
-
 // String returns the string representation of the table name.
 func (n *QualifiedTableName) String() string {
 	var buf bytes.Buffer
@@ -566,17 +430,6 @@ type ParenSource struct {
 	Alias  *Ident // optional table alias (select source only)
 }
 
-// Clone returns a deep copy of s.
-func (s *ParenSource) Clone() *ParenSource {
-	if s == nil {
-		return nil
-	}
-	other := *s
-	other.X = CloneSource(s.X)
-	other.Alias = s.Alias.Clone()
-	return &other
-}
-
 // String returns the string representation of the source.
 func (s *ParenSource) String() string {
 	if s.Alias != nil {
@@ -590,18 +443,6 @@ type JoinClause struct {
 	Operator   *JoinOperator  // join operator
 	Y          Source         // rhs source
 	Constraint JoinConstraint // join constraint
-}
-
-// Clone returns a deep copy of c.
-func (c *JoinClause) Clone() *JoinClause {
-	if c == nil {
-		return nil
-	}
-	other := *c
-	other.X = CloneSource(c.X)
-	other.Y = CloneSource(c.Y)
-	other.Constraint = CloneJoinConstraint(c.Constraint)
-	return &other
 }
 
 // String returns the string representation of the clause.
@@ -695,35 +536,9 @@ type JoinConstraint interface {
 func (*OnConstraint) joinConstraint()    {}
 func (*UsingConstraint) joinConstraint() {}
 
-// CloneJoinConstraint returns a deep copy cons.
-func CloneJoinConstraint(cons JoinConstraint) JoinConstraint {
-	if cons == nil {
-		return nil
-	}
-
-	switch cons := cons.(type) {
-	case *OnConstraint:
-		return cons.Clone()
-	case *UsingConstraint:
-		return cons.Clone()
-	default:
-		panic(fmt.Sprintf("invalid join constraint type: %T", cons))
-	}
-}
-
 type OnConstraint struct {
 	On Pos  // position of ON keyword
 	X  Expr // constraint expression
-}
-
-// Clone returns a deep copy of c.
-func (c *OnConstraint) Clone() *OnConstraint {
-	if c == nil {
-		return nil
-	}
-	other := *c
-	other.X = CloneExpr(c.X)
-	return &other
 }
 
 // String returns the string representation of the constraint.
@@ -736,16 +551,6 @@ type UsingConstraint struct {
 	Lparen  Pos      // position of left paren
 	Columns []*Ident // column list
 	Rparen  Pos      // position of right paren
-}
-
-// Clone returns a deep copy of c.
-func (c *UsingConstraint) Clone() *UsingConstraint {
-	if c == nil {
-		return nil
-	}
-	other := *c
-	other.Columns = cloneIdents(c.Columns)
-	return &other
 }
 
 // String returns the string representation of the constraint.
@@ -771,15 +576,6 @@ type JoinOperator struct {
 	Inner   Pos // position of INNER keyword
 	Cross   Pos // position of CROSS keyword
 	Join    Pos // position of JOIN keyword
-}
-
-// Clone returns a deep copy of op.
-func (op *JoinOperator) Clone() *JoinOperator {
-	if op == nil {
-		return nil
-	}
-	other := *op
-	return &other
 }
 
 // String returns the string representation of the operator.
@@ -830,18 +626,6 @@ func (n *QualifiedTableFunctionName) TableName() string {
 	return IdentName(n.Name)
 }
 
-// Clone returns a deep copy of n.
-func (n *QualifiedTableFunctionName) Clone() *QualifiedTableFunctionName {
-	if n == nil {
-		return nil
-	}
-	other := *n
-	other.Name = n.Name.Clone()
-	other.Args = cloneExprs(n.Args)
-	other.Alias = n.Alias.Clone()
-	return &other
-}
-
 // String returns the string representation of the table name.
 func (n *QualifiedTableFunctionName) String() string {
 	var buf bytes.Buffer
@@ -867,17 +651,6 @@ type OverClause struct {
 	Definition *WindowDefinition // window definition
 }
 
-// Clone returns a deep copy of c.
-func (c *OverClause) Clone() *OverClause {
-	if c == nil {
-		return nil
-	}
-	other := *c
-	other.Name = c.Name.Clone()
-	other.Definition = c.Definition.Clone()
-	return &other
-}
-
 // String returns the string representation of the clause.
 func (c *OverClause) String() string {
 	if c.Name != nil {
@@ -895,27 +668,6 @@ type OrderingTerm struct {
 	Nulls      Pos // position of NULLS keyword
 	NullsFirst Pos // position of FIRST keyword
 	NullsLast  Pos // position of LAST keyword
-}
-
-// Clone returns a deep copy of t.
-func (t *OrderingTerm) Clone() *OrderingTerm {
-	if t == nil {
-		return nil
-	}
-	other := *t
-	other.X = CloneExpr(t.X)
-	return &other
-}
-
-func cloneOrderingTerms(a []*OrderingTerm) []*OrderingTerm {
-	if a == nil {
-		return nil
-	}
-	other := make([]*OrderingTerm, len(a))
-	for i := range a {
-		other[i] = a[i].Clone()
-	}
-	return other
 }
 
 // String returns the string representation of the term.
@@ -944,28 +696,6 @@ type Window struct {
 	Definition *WindowDefinition // window definition
 }
 
-// Clone returns a deep copy of w.
-func (w *Window) Clone() *Window {
-	if w == nil {
-		return nil
-	}
-	other := *w
-	other.Name = w.Name.Clone()
-	other.Definition = w.Definition.Clone()
-	return &other
-}
-
-func cloneWindows(a []*Window) []*Window {
-	if a == nil {
-		return nil
-	}
-	other := make([]*Window, len(a))
-	for i := range a {
-		other[i] = a[i].Clone()
-	}
-	return other
-}
-
 // String returns the string representation of the window.
 func (w *Window) String() string {
 	return fmt.Sprintf("%s AS %s", w.Name.String(), w.Definition.String())
@@ -981,18 +711,6 @@ type WindowDefinition struct {
 	OrderBy       Pos             // position of BY keyword (after ORDER)
 	OrderingTerms []*OrderingTerm // ordering terms
 	Rparen        Pos             // position of right paren
-}
-
-// Clone returns a deep copy of d.
-func (d *WindowDefinition) Clone() *WindowDefinition {
-	if d == nil {
-		return nil
-	}
-	other := *d
-	other.Base = d.Base.Clone()
-	other.Partitions = cloneExprs(d.Partitions)
-	other.OrderingTerms = cloneOrderingTerms(d.OrderingTerms)
-	return &other
 }
 
 // String returns the string representation of the window definition.

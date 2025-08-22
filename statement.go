@@ -26,35 +26,11 @@ func (*CreateTableStatement) stmt() {}
 func (*DropTableStatement) stmt()   {}
 func (*MergeStatement) stmt()       {}
 
-// CloneStatement returns a deep copy stmt.
-func CloneStatement(stmt Statement) Statement {
-	if stmt == nil {
-		return nil
-	}
-
-	switch stmt := stmt.(type) {
-	case *SelectStatement:
-		return stmt.Clone()
-	default:
-		panic(fmt.Sprintf("invalid statement type: %T", stmt))
-	}
-}
-
 type SetStatement struct {
 	Set   Pos
 	Key   string
 	Equal Pos
 	Value string
-}
-
-func (s *SetStatement) Clone() *SetStatement {
-	if s == nil {
-		return nil
-	}
-	other := *s
-	other.Key = s.Key
-	other.Value = s.Value
-	return &other
 }
 
 func (s *SetStatement) String() string {
@@ -65,17 +41,6 @@ type DeclarationStatement struct {
 	Name  *Ident
 	Value Expr
 	Type  Expr
-}
-
-func (s *DeclarationStatement) Clone() *DeclarationStatement {
-	if s == nil {
-		return nil
-	}
-	other := *s
-	other.Name = s.Name.Clone()
-	other.Value = CloneExpr(s.Value)
-	other.Type = CloneExpr(s.Type)
-	return &other
 }
 
 func (s *DeclarationStatement) String() string {
@@ -115,23 +80,6 @@ type InsertStatement struct {
 
 	UpsertClause    *UpsertClause    // optional upsert clause
 	ReturningClause *ReturningClause // optional RETURNING clause
-}
-
-// Clone returns a deep copy of s.
-func (s *InsertStatement) Clone() *InsertStatement {
-	if s == nil {
-		return nil
-	}
-	other := *s
-	other.WithClause = s.WithClause.Clone()
-	other.Table = s.Table.Clone()
-	other.Alias = s.Alias.Clone()
-	other.Columns = cloneIdents(s.Columns)
-	other.ValueLists = cloneExprLists(s.ValueLists)
-	other.Select = s.Select.Clone()
-	other.UpsertClause = s.UpsertClause.Clone()
-	other.ReturningClause = s.ReturningClause.Clone()
-	return &other
 }
 
 // String returns the string representation of the statement.
@@ -218,19 +166,6 @@ type UpsertClause struct {
 	UpdateWhereExpr Expr          // optional conditional expression for DO UPDATE SET
 }
 
-// Clone returns a deep copy of c.
-func (c *UpsertClause) Clone() *UpsertClause {
-	if c == nil {
-		return nil
-	}
-	other := *c
-	other.Columns = cloneIndexedColumns(c.Columns)
-	other.WhereExpr = CloneExpr(c.WhereExpr)
-	other.Assignments = cloneAssignments(c.Assignments)
-	other.UpdateWhereExpr = CloneExpr(c.UpdateWhereExpr)
-	return &other
-}
-
 // String returns the string representation of the clause.
 func (c *UpsertClause) String() string {
 	var buf bytes.Buffer
@@ -276,15 +211,6 @@ type ReturningClause struct {
 	Columns   []*ResultColumn // list of result columns in the SELECT clause
 }
 
-// Clone returns a deep copy of c.
-func (c *ReturningClause) Clone() *ReturningClause {
-	if c == nil {
-		return nil
-	}
-	other := *c
-	return &other
-}
-
 // String returns the string representation of the clause.
 func (c *ReturningClause) String() string {
 	var buf bytes.Buffer
@@ -318,21 +244,6 @@ type DeleteStatement struct {
 	OffsetExpr  Expr // offset expression
 
 	ReturningClause *ReturningClause // optional RETURNING clause
-}
-
-// Clone returns a deep copy of s.
-func (s *DeleteStatement) Clone() *DeleteStatement {
-	if s == nil {
-		return nil
-	}
-	other := *s
-	other.WithClause = s.WithClause.Clone()
-	other.Table = s.Table.Clone()
-	other.WhereExpr = CloneExpr(s.WhereExpr)
-	other.OrderingTerms = cloneOrderingTerms(s.OrderingTerms)
-	other.LimitExpr = CloneExpr(s.LimitExpr)
-	other.OffsetExpr = CloneExpr(s.OffsetExpr)
-	return &other
 }
 
 // String returns the string representation of the clause.
@@ -380,28 +291,6 @@ type Assignment struct {
 	Expr    Expr              // assigned expression
 }
 
-// Clone returns a deep copy of a.
-func (a *Assignment) Clone() *Assignment {
-	if a == nil {
-		return nil
-	}
-	other := *a
-	//other.Columns = cloneIdents(a.Columns)
-	other.Expr = CloneExpr(a.Expr)
-	return &other
-}
-
-func cloneAssignments(a []*Assignment) []*Assignment {
-	if a == nil {
-		return nil
-	}
-	other := make([]*Assignment, len(a))
-	for i := range a {
-		other[i] = a[i].Clone()
-	}
-	return other
-}
-
 // String returns the string representation of the clause.
 func (a *Assignment) String() string {
 	var buf bytes.Buffer
@@ -428,28 +317,6 @@ type IndexedColumn struct {
 	Collation *Ident // collation name
 	Asc       Pos    // position of optional ASC keyword
 	Desc      Pos    // position of optional DESC keyword
-}
-
-// Clone returns a deep copy of c.
-func (c *IndexedColumn) Clone() *IndexedColumn {
-	if c == nil {
-		return nil
-	}
-	other := *c
-	other.X = CloneExpr(c.X)
-	other.Collation = c.Collation.Clone()
-	return &other
-}
-
-func cloneIndexedColumns(a []*IndexedColumn) []*IndexedColumn {
-	if a == nil {
-		return nil
-	}
-	other := make([]*IndexedColumn, len(a))
-	for i := range a {
-		other[i] = a[i].Clone()
-	}
-	return other
 }
 
 // String returns the string representation of the column.
@@ -489,18 +356,6 @@ type CreateTableStatement struct {
 	Select *SelectStatement // select stmt to build from
 }
 
-// Clone returns a deep copy of s.
-func (s *CreateTableStatement) Clone() *CreateTableStatement {
-	if s == nil {
-		return s
-	}
-	other := *s
-	other.Name = s.Name.Clone()
-	other.Columns = cloneColumnDefinitions(s.Columns)
-	other.Select = s.Select.Clone()
-	return &other
-}
-
 // String returns the string representation of the statement.
 func (s *CreateTableStatement) String() string {
 	var buf bytes.Buffer
@@ -533,28 +388,6 @@ type ColumnDefinition struct {
 	Type *Type  // data type
 }
 
-// Clone returns a deep copy of d.
-func (c *ColumnDefinition) Clone() *ColumnDefinition {
-	if c == nil {
-		return c
-	}
-	other := *c
-	other.Name = c.Name.Clone()
-	other.Type = c.Type.Clone()
-	return &other
-}
-
-func cloneColumnDefinitions(a []*ColumnDefinition) []*ColumnDefinition {
-	if a == nil {
-		return nil
-	}
-	other := make([]*ColumnDefinition, len(a))
-	for i := range a {
-		other[i] = a[i].Clone()
-	}
-	return other
-}
-
 // String returns the string representation of the statement.
 func (c *ColumnDefinition) String() string {
 	var buf bytes.Buffer
@@ -572,16 +405,6 @@ type DropTableStatement struct {
 	If       Pos             // position of IF keyword
 	IfExists Pos             // position of EXISTS keyword after IF
 	Name     *MultiPartIdent // view name
-}
-
-// Clone returns a deep copy of s.
-func (s *DropTableStatement) Clone() *DropTableStatement {
-	if s == nil {
-		return nil
-	}
-	other := *s
-	other.Name = s.Name.Clone()
-	return &other
 }
 
 // String returns the string representation of the statement.
@@ -628,15 +451,6 @@ type MergeStatement struct {
 	OnExpr Expr
 
 	Matched []*MatchedCondition
-}
-
-func (s *MergeStatement) Clone() *MergeStatement {
-	// TODO: DELETE clone statements
-	if s == nil {
-		return nil
-	}
-	other := *s
-	return &other
 }
 
 func (s *MergeStatement) String() string {
