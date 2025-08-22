@@ -180,7 +180,7 @@ func (p *Parser) parseSelectStatement(compounded bool, withClause *WithClause) (
 
 	// Optionally compound additional SELECT/VALUES.
 	switch tok := p.peek(); tok {
-	case UNION, INTERSECT, EXCEPT:
+	case UNION, INTERSECT:
 		if tok == UNION {
 			stmt.Union, _, _ = p.scan()
 			if p.peek() == ALL {
@@ -188,8 +188,6 @@ func (p *Parser) parseSelectStatement(compounded bool, withClause *WithClause) (
 			}
 		} else if tok == INTERSECT {
 			stmt.Intersect, _, _ = p.scan()
-		} else {
-			stmt.Except, _, _ = p.scan()
 		}
 
 		if stmt.Compound, err = p.parseSelectStatement(true, nil); err != nil {
@@ -249,6 +247,16 @@ func (p *Parser) parseResultColumn() (_ *ResultColumn, err error) {
 	// An initial "*" returns all columns.
 	if p.peek() == STAR {
 		col.Star, _, _ = p.scan()
+
+		if p.peek() == EXCEPT {
+			col.Except, _, _ = p.scan()
+			expr, err := p.ParseExpr()
+			if err != nil {
+				return &col, err
+			}
+			col.ExceptCol = expr
+		}
+
 		return &col, nil
 	}
 

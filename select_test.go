@@ -884,20 +884,29 @@ func TestParser_ParseStatement(t *testing.T) {
 				},
 			},
 		})
-		AssertParseStatement(t, `SELECT * EXCEPT SELECT *`, &query.SelectStatement{
+		AssertParseStatement(t, `SELECT * EXCEPT (col1, col2), bcd FROM tbl1`, &query.SelectStatement{
 			Select: pos(0),
-			Columns: []*query.ResultColumn{
-				{Star: pos(7)},
-			},
-			Except: pos(9),
-			Compound: &query.SelectStatement{
-				Select: pos(16),
-				Columns: []*query.ResultColumn{
-					{Star: pos(23)},
+			Columns: []*query.ResultColumn{{
+				Star:   pos(7),
+				Except: pos(9),
+				ExceptCol: &query.ExprList{
+					Lparen: pos(16),
+					Rparen: pos(27),
+					Exprs: []query.Expr{
+						&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(17), Name: "col1", Tok: query.IDENT}},
+						&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(23), Name: "col2", Tok: query.IDENT}},
+					},
 				},
 			},
+				{
+					Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(30), Name: "bcd", Tok: query.IDENT}},
+				},
+			},
+			From: pos(34),
+			Source: &query.QualifiedTableName{
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(39), Name: "tbl1", Tok: query.IDENT}},
+			},
 		})
-
 		AssertParseStatement(t, `VALUES (1, 2), (3, 4)`, &query.SelectStatement{
 			Values: pos(0),
 			ValueLists: []*query.ExprList{

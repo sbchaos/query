@@ -50,7 +50,6 @@ type SelectStatement struct {
 	Union     Pos              // position of UNION keyword
 	UnionAll  Pos              // position of ALL keyword after UNION
 	Intersect Pos              // position of INTERSECT keyword
-	Except    Pos              // position of EXCEPT keyword
 	Compound  *SelectStatement // compounded SELECT statement
 
 	Order         Pos             // position of ORDER keyword
@@ -179,8 +178,6 @@ func (s *SelectStatement) String() string {
 			}
 		case s.Intersect.IsValid():
 			buf.WriteString(" INTERSECT")
-		case s.Except.IsValid():
-			buf.WriteString(" EXCEPT")
 		}
 
 		fmt.Fprintf(&buf, " %s", s.Compound.String())
@@ -303,6 +300,9 @@ type ResultColumn struct {
 	Expr  Expr   // column expression (may be "tbl.*")
 	As    Pos    // position of AS keyword
 	Alias *Ident // alias name
+
+	Except    Pos // position of EXCEPT keyword
+	ExceptCol Expr
 }
 
 // Clone returns a deep copy of c.
@@ -313,6 +313,7 @@ func (c *ResultColumn) Clone() *ResultColumn {
 	other := *c
 	other.Expr = CloneExpr(c.Expr)
 	other.Alias = c.Alias.Clone()
+	other.ExceptCol = CloneExpr(c.ExceptCol)
 	return &other
 }
 
@@ -330,6 +331,10 @@ func cloneResultColumns(a []*ResultColumn) []*ResultColumn {
 // String returns the string representation of the column.
 func (c *ResultColumn) String() string {
 	if c.Star.IsValid() {
+		if c.Except.IsValid() {
+			return "* EXCEPT " + c.ExceptCol.String()
+		}
+
 		return "*"
 	} else if c.Alias != nil {
 		return fmt.Sprintf("%s AS %s", c.Expr.String(), c.Alias.String())
