@@ -16,51 +16,51 @@ func (*UsingConstraint) node()            {}
 func (*SelectStatement) stmt() {}
 
 type SelectStatement struct {
-	WithClause *WithClause // clause containing CTEs
+	WithClause *WithClause `json:"with_clause"`
 
-	Values     Pos         // position of VALUES keyword
-	ValueLists []*ExprList // lists of values
+	Values     Pos         `json:"values"`
+	ValueLists []*ExprList `json:"value_lists"`
 
-	Select   Pos             // position of SELECT keyword
-	Distinct Pos             // position of DISTINCT keyword
-	All      Pos             // position of ALL keyword
-	Columns  []*ResultColumn // list of result columns in the SELECT clause
+	Select   Pos             `json:"select"`
+	Distinct Pos             `json:"distinct"`
+	All      Pos             `json:"all"`
+	Columns  []*ResultColumn `json:"columns"`
 
-	From   Pos    // position of FROM keyword
-	Source Source // chain of tables & subqueries in FROM clause
+	From   Pos    `json:"from"`
+	Source Source `json:"source"`
 
-	Where     Pos  // position of WHERE keyword
-	WhereExpr Expr // condition for WHERE clause
+	Where     Pos  `json:"where"`
+	WhereExpr Expr `json:"where_expr"`
 
-	Group        Pos    // position of GROUP keyword
-	GroupBy      Pos    // position of BY keyword after GROUP
-	GroupByAll   Pos    // positon of ALL keyword after GROUP BY
-	GroupByExprs []Expr // group by expression list
-	Grouping     Pos    // GROUPING
-	GroupingSet  Pos    // position of SETS
-	GroupingExpr Expr   // Grouping Set config
-	Having       Pos    // position of HAVING keyword
-	HavingExpr   Expr   // HAVING expression
-	Qualify      Pos    // position of QUALIFY keyword
-	QualifyExpr  Expr   // QUALIFY expression
+	Group        Pos    `json:"group"`
+	GroupBy      Pos    `json:"group_by"`
+	GroupByAll   Pos    `json:"group_by_all"`
+	GroupByExprs []Expr `json:"group_by_exprs"`
+	Grouping     Pos    `json:"grouping"`
+	GroupingSet  Pos    `json:"grouping_set"`
+	GroupingExpr Expr   `json:"grouping_expr"`
+	Having       Pos    `json:"having"`
+	HavingExpr   Expr   `json:"having_expr"`
+	Qualify      Pos    `json:"qualify"`
+	QualifyExpr  Expr   `json:"qualify_expr"`
 
-	Window  Pos       // position of WINDOW keyword
-	Windows []*Window // window list
+	Window  Pos       `json:"window"`
+	Windows []*Window `json:"windows"`
 
-	Union     Pos              // position of UNION keyword
-	UnionAll  Pos              // position of ALL keyword after UNION
-	Intersect Pos              // position of INTERSECT keyword
-	Compound  *SelectStatement // compounded SELECT statement
+	Union     Pos              `json:"union"`
+	UnionAll  Pos              `json:"union_all"`
+	Intersect Pos              `json:"intersect"`
+	Compound  *SelectStatement `json:"compound"`
 
-	Order         Pos             // position of ORDER keyword
-	OrderBy       Pos             // position of BY keyword after ORDER
-	OrderingTerms []*OrderingTerm // terms of ORDER BY clause
+	Order         Pos             `json:"order"`
+	OrderBy       Pos             `json:"order_by"`
+	OrderingTerms []*OrderingTerm `json:"ordering_terms"`
 
-	Limit       Pos  // position of LIMIT keyword
-	LimitExpr   Expr // limit expression
-	Offset      Pos  // position of OFFSET keyword
-	OffsetComma Pos  // position of COMMA (instead of OFFSET)
-	OffsetExpr  Expr // offset expression
+	Limit       Pos  `json:"limit"`
+	LimitExpr   Expr `json:"limit_expr"`
+	Offset      Pos  `json:"offset"`
+	OffsetComma Pos  `json:"offset_comma"`
+	OffsetExpr  Expr `json:"offset_expr"`
 }
 
 // String returns the string representation of the statement.
@@ -183,9 +183,9 @@ func (s *SelectStatement) String() string {
 }
 
 type WithClause struct {
-	With      Pos    // position of WITH keyword
-	Recursive Pos    // position of RECURSIVE keyword
-	CTEs      []*CTE // common table expressions
+	With      Pos    `json:"with"`
+	Recursive Pos    `json:"recursive"`
+	CTEs      []*CTE `json:"ctes"`
 }
 
 // String returns the string representation of the clause.
@@ -208,14 +208,14 @@ func (c *WithClause) String() string {
 
 // CTE represents an AST node for a common table expression.
 type CTE struct {
-	TableName     *Ident           // table name
-	ColumnsLparen Pos              // position of column list left paren
-	Columns       []*Ident         // optional column list
-	ColumnsRparen Pos              // position of column list right paren
-	As            Pos              // position of AS keyword
-	SelectLparen  Pos              // position of select left paren
-	Select        *SelectStatement // select statement
-	SelectRparen  Pos              // position of select right paren
+	TableName     *Ident           `json:"tableName"`
+	ColumnsLparen Pos              `json:"columns_lparen"`
+	Columns       []*Ident         `json:"columns"`
+	ColumnsRparen Pos              `json:"columns_rparen"`
+	As            Pos              `json:"as"`
+	SelectLparen  Pos              `json:"select_lparen"`
+	Select        *SelectStatement `json:"select"`
+	SelectRparen  Pos              `json:"select_rparen"`
 }
 
 // String returns the string representation of the CTE.
@@ -240,13 +240,13 @@ func (cte *CTE) String() string {
 }
 
 type ResultColumn struct {
-	Star  Pos    // position of *
-	Expr  Expr   // column expression (may be "tbl.*")
-	As    Pos    // position of AS keyword
-	Alias *Ident // alias name
+	Star  Pos    `json:"star"`
+	Expr  Expr   `json:"expr"`
+	As    Pos    `json:"as"`
+	Alias *Ident `json:"alias"`
 
-	Except    Pos // position of EXCEPT keyword
-	ExceptCol Expr
+	Except    Pos  `json:"except"`
+	ExceptCol Expr `json:"except_col"`
 }
 
 // String returns the string representation of the column.
@@ -352,13 +352,13 @@ func ResolveSource(root Source, name string) Source {
 //	LATERALVIEW: LATERAL VIEW [OUTER] <udtf_name>(<expression>) <table_alias> AS <columnAlias> (',' <columnAlias>)
 //	fromClause: FROM <baseTable> (LATERALVIEW) [(LATERALVIEW) ...]
 type LateralView struct {
-	Lateral    Pos
-	View       Pos
-	Outer      Pos
-	Udtf       *Call
-	TableAlias *Ident
-	As         Pos
-	ColAlias   []*Ident
+	Lateral    Pos      `json:"lateral"`
+	View       Pos      `json:"view"`
+	Outer      Pos      `json:"outer"`
+	Udtf       *Call    `json:"udtf"`
+	TableAlias *Ident   `json:"table_alias"`
+	As         Pos      `json:"as"`
+	ColAlias   []*Ident `json:"col_alias"`
 }
 
 func (l *LateralView) String() string {
@@ -391,11 +391,11 @@ func (l *LateralView) String() string {
 }
 
 type QualifiedTableName struct {
-	Name  *MultiPartIdent
-	As    Pos    // position of AS keyword
-	Alias *Ident // optional table alias
+	Name  *MultiPartIdent `json:"name"`
+	As    Pos             `json:"as"`
+	Alias *Ident          `json:"alias"`
 
-	LateralViews []*LateralView
+	LateralViews []*LateralView `json:"lateral_views"`
 }
 
 // TableName returns the name used to identify n.
@@ -423,11 +423,11 @@ func (n *QualifiedTableName) String() string {
 }
 
 type ParenSource struct {
-	Lparen Pos    // position of left paren
-	X      Source // nested source
-	Rparen Pos    // position of right paren
-	As     Pos    // position of AS keyword (select source only)
-	Alias  *Ident // optional table alias (select source only)
+	Lparen Pos    `json:"lparen"`
+	X      Source `json:"x"`
+	Rparen Pos    `json:"rparen"`
+	As     Pos    `json:"as"`
+	Alias  *Ident `json:"alias"`
 }
 
 // String returns the string representation of the source.
@@ -439,10 +439,10 @@ func (s *ParenSource) String() string {
 }
 
 type JoinClause struct {
-	X          Source         // lhs source
-	Operator   *JoinOperator  // join operator
-	Y          Source         // rhs source
-	Constraint JoinConstraint // join constraint
+	X          Source         `json:"x"`
+	Operator   *JoinOperator  `json:"operator"`
+	Y          Source         `json:"y"`
+	Constraint JoinConstraint `json:"constraint"`
 }
 
 // String returns the string representation of the clause.
@@ -537,8 +537,8 @@ func (*OnConstraint) joinConstraint()    {}
 func (*UsingConstraint) joinConstraint() {}
 
 type OnConstraint struct {
-	On Pos  // position of ON keyword
-	X  Expr // constraint expression
+	On Pos  `json:"on"`
+	X  Expr `json:"x"`
 }
 
 // String returns the string representation of the constraint.
@@ -547,10 +547,10 @@ func (c *OnConstraint) String() string {
 }
 
 type UsingConstraint struct {
-	Using   Pos      // position of USING keyword
-	Lparen  Pos      // position of left paren
-	Columns []*Ident // column list
-	Rparen  Pos      // position of right paren
+	Using   Pos      `json:"using"`
+	Lparen  Pos      `json:"lparen"`
+	Columns []*Ident `json:"columns"`
+	Rparen  Pos      `json:"rparen"`
 }
 
 // String returns the string representation of the constraint.
@@ -568,14 +568,14 @@ func (c *UsingConstraint) String() string {
 }
 
 type JoinOperator struct {
-	Comma   Pos // position of comma
-	Natural Pos // position of NATURAL keyword
-	Left    Pos // position of LEFT keyword
-	Outer   Pos // position of OUTER keyword
-	Full    Pos // positon of FULL keyword
-	Inner   Pos // position of INNER keyword
-	Cross   Pos // position of CROSS keyword
-	Join    Pos // position of JOIN keyword
+	Comma   Pos `json:"comma"`
+	Natural Pos `json:"natural"`
+	Left    Pos `json:"left"`
+	Outer   Pos `json:"outer"`
+	Full    Pos `json:"full"`
+	Inner   Pos `json:"inner"`
+	Cross   Pos `json:"cross"`
+	Join    Pos `json:"join"`
 }
 
 // String returns the string representation of the operator.
@@ -609,12 +609,12 @@ func (op *JoinOperator) String() string {
 }
 
 type QualifiedTableFunctionName struct {
-	Name   *Ident // table function name
-	Lparen Pos    // position of left paren
-	Args   []Expr // argument list
-	Rparen Pos    // position of right paren
-	As     Pos    // position of AS keyword
-	Alias  *Ident // optional table alias
+	Name   *Ident `json:"name"`
+	Lparen Pos    `json:"lparen"`
+	Args   []Expr `json:"args"`
+	Rparen Pos    `json:"rparen"`
+	As     Pos    `json:"as"`
+	Alias  *Ident `json:"alias"`
 }
 
 // TableName returns the name used to identify n.
@@ -646,9 +646,9 @@ func (n *QualifiedTableFunctionName) String() string {
 }
 
 type OverClause struct {
-	Over       Pos               // position of OVER keyword
-	Name       *Ident            // window name
-	Definition *WindowDefinition // window definition
+	Over       Pos               `json:"over"`
+	Name       *Ident            `json:"name"`
+	Definition *WindowDefinition `json:"definition"`
 }
 
 // String returns the string representation of the clause.
@@ -660,14 +660,14 @@ func (c *OverClause) String() string {
 }
 
 type OrderingTerm struct {
-	X Expr // ordering expression
+	X Expr `json:"x"`
 
-	Asc  Pos // position of ASC keyword
-	Desc Pos // position of DESC keyword
+	Asc  Pos `json:"asc"`
+	Desc Pos `json:"desc"`
 
-	Nulls      Pos // position of NULLS keyword
-	NullsFirst Pos // position of FIRST keyword
-	NullsLast  Pos // position of LAST keyword
+	Nulls      Pos `json:"nulls"`
+	NullsFirst Pos `json:"nulls_first"`
+	NullsLast  Pos `json:"nulls_last"`
 }
 
 // String returns the string representation of the term.
@@ -691,9 +691,9 @@ func (t *OrderingTerm) String() string {
 }
 
 type Window struct {
-	Name       *Ident            // name of window
-	As         Pos               // position of AS keyword
-	Definition *WindowDefinition // window definition
+	Name       *Ident
+	As         Pos
+	Definition *WindowDefinition
 }
 
 // String returns the string representation of the window.
@@ -702,15 +702,15 @@ func (w *Window) String() string {
 }
 
 type WindowDefinition struct {
-	Lparen        Pos             // position of left paren
-	Base          *Ident          // base window name
-	Partition     Pos             // position of PARTITION keyword
-	PartitionBy   Pos             // position of BY keyword (after PARTITION)
-	Partitions    []Expr          // partition expressions
-	Order         Pos             // position of ORDER keyword
-	OrderBy       Pos             // position of BY keyword (after ORDER)
-	OrderingTerms []*OrderingTerm // ordering terms
-	Rparen        Pos             // position of right paren
+	Lparen        Pos             `json:"lparen"`
+	Base          *Ident          `json:"base"`
+	Partition     Pos             `json:"partition"`
+	PartitionBy   Pos             `json:"partition_by"`
+	Partitions    []Expr          `json:"partitions"`
+	Order         Pos             `json:"order"`
+	OrderBy       Pos             `json:"order_by"`
+	OrderingTerms []*OrderingTerm `json:"ordering_terms"`
+	Rparen        Pos             `json:"rparen"`
 }
 
 // String returns the string representation of the window definition.

@@ -18,8 +18,8 @@ func (*TimestampLit) expr() {}
 func (*TemplateStr) expr()  {}
 
 type BlobLit struct {
-	ValuePos Pos    // literal position
-	Value    string // literal value
+	ValuePos Pos    `json:"value_pos"`
+	Value    string `json:"value"`
 }
 
 // Clone returns a deep copy of lit.
@@ -37,8 +37,8 @@ func (lit *BlobLit) String() string {
 }
 
 type BoolLit struct {
-	ValuePos Pos  // literal position
-	Value    bool // literal value
+	ValuePos Pos  `json:"value_pos"`
+	Value    bool `json:"value"`
 }
 
 // Clone returns a deep copy of lit.
@@ -59,7 +59,7 @@ func (lit *BoolLit) String() string {
 }
 
 type NullLit struct {
-	Pos Pos
+	Pos Pos `json:"pos"`
 }
 
 // Clone returns a deep copy of lit.
@@ -77,8 +77,8 @@ func (lit *NullLit) String() string {
 }
 
 type NumberLit struct {
-	ValuePos Pos    // literal position
-	Value    string // literal value
+	ValuePos Pos    `json:"value_pos"`
+	Value    string `json:"value"`
 }
 
 // Clone returns a deep copy of lit.
@@ -96,9 +96,9 @@ func (lit *NumberLit) String() string {
 }
 
 type StringLit struct {
-	ValuePos Pos    // literal position
-	Value    string // literal value (without quotes)
-	Quote    rune   // type of quote
+	ValuePos Pos    `json:"value_pos"`
+	Value    string `json:"value"`
+	Quote    rune   `json:"quote"`
 }
 
 // Clone returns a deep copy of lit.
@@ -119,8 +119,8 @@ func (lit *StringLit) String() string {
 }
 
 type TimestampLit struct {
-	ValuePos Pos    // literal position
-	Value    string // literal value
+	ValuePos Pos    `json:"value_pos"`
+	Value    string `json:"value"`
 }
 
 // Clone returns a deep copy of lit.
@@ -138,8 +138,8 @@ func (lit *TimestampLit) String() string {
 }
 
 type TemplateStr struct {
-	TmplPos  Pos
-	Template string
+	TmplPos  Pos    `json:"template_pos"`
+	Template string `json:"template"`
 }
 
 func (lit *TemplateStr) Clone() *TemplateStr {

@@ -38,9 +38,9 @@ func (s *SetStatement) String() string {
 }
 
 type DeclarationStatement struct {
-	Name  *Ident
-	Value Expr
-	Type  Expr
+	Name  *Ident `json:"name"`
+	Value Expr   `json:"value"`
+	Type  Expr   `json:"type"`
 }
 
 func (s *DeclarationStatement) String() string {
@@ -54,32 +54,32 @@ func (s *DeclarationStatement) String() string {
 }
 
 type InsertStatement struct {
-	WithClause *WithClause // clause containing CTEs
+	WithClause *WithClause `json:"with_clause"`
 
-	Insert    Pos // position of INSERT keyword
-	Replace   Pos // position of REPLACE keyword
-	Into      Pos // position of INTO keyword
-	Overwrite Pos // positon of OVERWRITE keyword
-	TablePos  Pos // positon of Table Keyword
+	Insert    Pos `json:"insert"`
+	Replace   Pos `json:"replace"`
+	Into      Pos `json:"into"`
+	Overwrite Pos `json:"overwrite"`
+	TablePos  Pos `json:"table_pos"`
 
-	Table *MultiPartIdent // table name
-	As    Pos             // position of AS keyword
-	Alias *Ident          // optional alias
+	Table *MultiPartIdent `json:"table"`
+	As    Pos             `json:"as"`
+	Alias *Ident          `json:"alias"`
 
-	ColumnsLparen Pos      // position of column list left paren
-	Columns       []*Ident // optional column list
-	ColumnsRparen Pos      // position of column list right paren
+	ColumnsLparen Pos      `json:"columns_lparen"`
+	Columns       []*Ident `json:"columns"`
+	ColumnsRparen Pos      `json:"columns_rparen"`
 
-	Values     Pos         // position of VALUES keyword
-	ValueLists []*ExprList // lists of lists of values
+	Values     Pos         `json:"values"`
+	ValueLists []*ExprList `json:"value_lists"`
 
-	Select *SelectStatement // SELECT statement
+	Select *SelectStatement `json:"select"`
 
-	Default       Pos // position of DEFAULT keyword
-	DefaultValues Pos // position of VALUES keyword after DEFAULT
+	Default       Pos `json:"default"`
+	DefaultValues Pos `json:"default_values"`
 
-	UpsertClause    *UpsertClause    // optional upsert clause
-	ReturningClause *ReturningClause // optional RETURNING clause
+	UpsertClause    *UpsertClause    `json:"upsert_clause"`
+	ReturningClause *ReturningClause `json:"returning_clause"`
 }
 
 // String returns the string representation of the statement.
@@ -148,22 +148,22 @@ func (s *InsertStatement) String() string {
 }
 
 type UpsertClause struct {
-	On         Pos // position of ON keyword
-	OnConflict Pos // position of CONFLICT keyword after ON
+	On         Pos `json:"on"`
+	OnConflict Pos `json:"on_conflict"`
 
-	Lparen    Pos              // position of column list left paren
-	Columns   []*IndexedColumn // optional indexed column list
-	Rparen    Pos              // position of column list right paren
-	Where     Pos              // position of WHERE keyword
-	WhereExpr Expr             // optional conditional expression
+	Lparen    Pos              `json:"lparen"`
+	Columns   []*IndexedColumn `json:"columns"`
+	Rparen    Pos              `json:"rparen"`
+	Where     Pos              `json:"where"`
+	WhereExpr Expr             `json:"where_expr"`
 
-	Do              Pos           // position of DO keyword
-	DoNothing       Pos           // position of NOTHING keyword after DO
-	DoUpdate        Pos           // position of UPDATE keyword after DO
-	DoUpdateSet     Pos           // position of SET keyword after DO UPDATE
-	Assignments     []*Assignment // list of column assignments
-	UpdateWhere     Pos           // position of WHERE keyword for DO UPDATE SET
-	UpdateWhereExpr Expr          // optional conditional expression for DO UPDATE SET
+	Do              Pos           `json:"do"`
+	DoNothing       Pos           `json:"do_nothing"`
+	DoUpdate        Pos           `json:"do_update"`
+	DoUpdateSet     Pos           `json:"do_updateSet"`
+	Assignments     []*Assignment `json:"assignments"`
+	UpdateWhere     Pos           `json:"update_where"`
+	UpdateWhereExpr Expr          `json:"update_where_expr"`
 }
 
 // String returns the string representation of the clause.
@@ -207,8 +207,8 @@ func (c *UpsertClause) String() string {
 }
 
 type ReturningClause struct {
-	Returning Pos             // position of RETURNING keyword
-	Columns   []*ResultColumn // list of result columns in the SELECT clause
+	Returning Pos             `json:"returning"`
+	Columns   []*ResultColumn `json:"columns"`
 }
 
 // String returns the string representation of the clause.
@@ -225,25 +225,25 @@ func (c *ReturningClause) String() string {
 }
 
 type DeleteStatement struct {
-	WithClause *WithClause         // clause containing CTEs
-	Delete     Pos                 // position of UPDATE keyword
-	From       Pos                 // position of FROM keyword
-	Table      *QualifiedTableName // table name
+	WithClause *WithClause         `json:"with_clause"`
+	Delete     Pos                 `json:"delete"`
+	From       Pos                 `json:"from"`
+	Table      *QualifiedTableName `json:"table"`
 
-	Where     Pos  // position of WHERE keyword
-	WhereExpr Expr // conditional expression
+	Where     Pos  `json:"where"`
+	WhereExpr Expr `json:"where_expr"`
 
-	Order         Pos             // position of ORDER keyword
-	OrderBy       Pos             // position of BY keyword after ORDER
-	OrderingTerms []*OrderingTerm // terms of ORDER BY clause
+	Order         Pos             `json:"order"`
+	OrderBy       Pos             `json:"order_by"`
+	OrderingTerms []*OrderingTerm `json:"ordering_terms"`
 
-	Limit       Pos  // position of LIMIT keyword
-	LimitExpr   Expr // limit expression
-	Offset      Pos  // position of OFFSET keyword
-	OffsetComma Pos  // position of COMMA (instead of OFFSET)
-	OffsetExpr  Expr // offset expression
+	Limit       Pos  `json:"limit"`
+	LimitExpr   Expr `json:"limit_expr"`
+	Offset      Pos  `json:"offset"`
+	OffsetComma Pos  `json:"offset_comma"`
+	OffsetExpr  Expr `json:"offset_expr"`
 
-	ReturningClause *ReturningClause // optional RETURNING clause
+	ReturningClause *ReturningClause `json:"returning_clause"`
 }
 
 // String returns the string representation of the clause.
@@ -284,11 +284,11 @@ func (s *DeleteStatement) String() string {
 // Assignment is used within the UPDATE statement & upsert clause.
 // It is similiar to an expression except that it must be an equality.
 type Assignment struct {
-	Lparen  Pos               // position of column list left paren
-	Columns []*MultiPartIdent // column list
-	Rparen  Pos               // position of column list right paren
-	Eq      Pos               // position of =
-	Expr    Expr              // assigned expression
+	Lparen  Pos               `json:"lparen"`
+	Columns []*MultiPartIdent `json:"columns"`
+	Rparen  Pos               `json:"rparen"`
+	Eq      Pos               `json:"eq"`
+	Expr    Expr              `json:"expr"`
 }
 
 // String returns the string representation of the clause.
@@ -312,11 +312,11 @@ func (a *Assignment) String() string {
 }
 
 type IndexedColumn struct {
-	X         Expr   // column expression
-	Collate   Pos    // position of COLLATE keyword
-	Collation *Ident // collation name
-	Asc       Pos    // position of optional ASC keyword
-	Desc      Pos    // position of optional DESC keyword
+	X         Expr   `json:"x"`
+	Collate   Pos    `json:"collate"`
+	Collation *Ident `json:"collation"`
+	Asc       Pos    `json:"asc"`
+	Desc      Pos    `json:"desc"`
 }
 
 // String returns the string representation of the column.
@@ -339,21 +339,21 @@ func (c *IndexedColumn) String() string {
 }
 
 type CreateTableStatement struct {
-	Create      Pos
-	Or          Pos
-	Replace     Pos
-	Table       Pos
-	If          Pos
-	IfNot       Pos
-	IfNotExists Pos
-	Name        *MultiPartIdent
+	Create      Pos             `json:"create"`
+	Or          Pos             `json:"or"`
+	Replace     Pos             `json:"replace"`
+	Table       Pos             `json:"table"`
+	If          Pos             `json:"if"`
+	IfNot       Pos             `json:"if_not"`
+	IfNotExists Pos             `json:"if_not_exists"`
+	Name        *MultiPartIdent `json:"name"`
 
-	Lparen  Pos                 // position of left paren of column list
-	Columns []*ColumnDefinition // column definitions
-	Rparen  Pos                 // position of right paren of column list
+	Lparen  Pos                 `json:"lparen"`
+	Columns []*ColumnDefinition `json:"columns"`
+	Rparen  Pos                 `json:"rparen"`
 
-	As     Pos              // position of AS keyword (optional)
-	Select *SelectStatement // select stmt to build from
+	As     Pos              `json:"as"`
+	Select *SelectStatement `json:"select"`
 }
 
 // String returns the string representation of the statement.
@@ -384,8 +384,8 @@ func (s *CreateTableStatement) String() string {
 }
 
 type ColumnDefinition struct {
-	Name *Ident // column name
-	Type *Type  // data type
+	Name *Ident `json:"name"`
+	Type *Type  `json:"type"`
 }
 
 // String returns the string representation of the statement.
@@ -400,11 +400,11 @@ func (c *ColumnDefinition) String() string {
 }
 
 type DropTableStatement struct {
-	Drop     Pos             // position of DROP keyword
-	Table    Pos             // position of TABLE keyword
-	If       Pos             // position of IF keyword
-	IfExists Pos             // position of EXISTS keyword after IF
-	Name     *MultiPartIdent // view name
+	Drop     Pos             `json:"drop"`
+	Table    Pos             `json:"table"`
+	If       Pos             `json:"if"`
+	IfExists Pos             `json:"if_exists"`
+	Name     *MultiPartIdent `json:"name"`
 }
 
 // String returns the string representation of the statement.
@@ -419,40 +419,47 @@ func (s *DropTableStatement) String() string {
 }
 
 type MatchedCondition struct {
-	When    Pos
-	Not     Pos
-	Matched Pos
+	When    Pos `json:"when"`
+	Not     Pos `json:"not"`
+	Matched Pos `json:"matched"`
 
-	And     Pos
-	AndExpr Expr
-	Then    Pos
+	And     Pos  `json:"and"`
+	AndExpr Expr `json:"and_expr"`
+	Then    Pos  `json:"then"`
 
-	Update      Pos
-	UpdateSet   Pos
-	Assignments []*Assignment // list of column assignments
+	Update      Pos           `json:"update"`
+	UpdateSet   Pos           `json:"update_set"`
+	Assignments []*Assignment `json:"assignments"`
 
-	Delete Pos
+	Delete Pos `json:"delete"`
 
-	Insert     Pos
-	ColList    *ExprList
-	Values     Pos       // position of VALUES keyword
-	ValueLists *ExprList // lists of values
+	Insert     Pos       `json:"insert"`
+	ColList    *ExprList `json:"col_list"`
+	Values     Pos       `json:"values"`
+	ValueLists *ExprList `json:"value_lists"`
 }
 
 type MergeStatement struct {
-	Merge Pos // Position of Merge
-	Into  Pos // Positon of Into
+	Merge Pos `json:"merge"`
+	Into  Pos `json:"into"`
 
-	Target Source
-	Using  Pos
-	Source Source
+	Target Source `json:"target"`
+	Using  Pos    `json:"using"`
+	Source Source `json:"source"`
 
-	On     Pos
-	OnExpr Expr
+	On     Pos  `json:"on"`
+	OnExpr Expr `json:"on_expr"`
 
-	Matched []*MatchedCondition
+	Matched []*MatchedCondition `json:"matched"`
 }
 
 func (s *MergeStatement) String() string {
 	return "MergeStatement"
+}
+
+type FunctionStatement struct {
+}
+
+func (s *FunctionStatement) String() string {
+	return "FunctionStatement"
 }

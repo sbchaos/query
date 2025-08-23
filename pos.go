@@ -3,9 +3,9 @@ package query
 import "fmt"
 
 type Pos struct {
-	Offset int // offset, starting at 0
-	Line   int // line number, starting at 1
-	Column int // column number, starting at 1 (byte count)
+	Offset int `json:"offset"`
+	Line   int `json:"line"`
+	Column int `json:"column"`
 }
 
 // String returns a string representation of the position.

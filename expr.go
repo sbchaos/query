@@ -46,10 +46,10 @@ func (*UnaryExpr) expr()      {}
 func (SelectExpr) expr()      {}
 
 type BinaryExpr struct {
-	X     Expr  // lhs
-	OpPos Pos   // position of Op
-	Op    Token // operator
-	Y     Expr  // rhs
+	X     Expr  `json:"x"`
+	OpPos Pos   `json:"op_pos"`
+	Op    Token `json:"op"`
+	Y     Expr  `json:"y"`
 }
 
 // String returns the string representation of the expression.
@@ -131,13 +131,13 @@ func (expr *BinaryExpr) String() string {
 }
 
 type Call struct {
-	Name     *MultiPartIdent // function name
-	Lparen   Pos             // position of left paren
-	Star     Pos             // position of *
-	Distinct Pos             // position of DISTINCT keyword
-	Args     []Expr          // argument list
-	Rparen   Pos             // position of right paren
-	Over     *OverClause     // over clause
+	Name     *MultiPartIdent `json:"name"`
+	Lparen   Pos             `json:"lparen"`
+	Star     Pos             `json:"star"`
+	Distinct Pos             `json:"distinct"`
+	Args     []Expr          `json:"args"`
+	Rparen   Pos             `json:"rparen"`
+	Over     *OverClause     `json:"over"`
 }
 
 // String returns the string representation of the expression.
@@ -167,12 +167,12 @@ func (c *Call) String() string {
 }
 
 type CastExpr struct {
-	Cast   Pos   // position of CAST keyword
-	Lparen Pos   // position of left paren
-	X      Expr  // target expression
-	As     Pos   // position of AS keyword
-	Type   *Type // cast type
-	Rparen Pos   // position of right paren
+	Cast   Pos   `json:"cast"`
+	Lparen Pos   `json:"lparen"`
+	X      Expr  `json:"x"`
+	As     Pos   `json:"as"`
+	Type   *Type `json:"type"`
+	Rparen Pos   `json:"rparen"`
 }
 
 // String returns the string representation of the expression.
@@ -181,11 +181,11 @@ func (expr *CastExpr) String() string {
 }
 
 type Type struct {
-	Name      *Ident     // type name
-	Lparen    Pos        // position of left paren (optional)
-	Precision *NumberLit // precision (optional)
-	Scale     *NumberLit // scale (optional)
-	Rparen    Pos        // position of right paren (optional)
+	Name      *Ident     `json:"name"`
+	Lparen    Pos        `json:"lparen"`
+	Precision *NumberLit `json:"precision"`
+	Scale     *NumberLit `json:"scale"`
+	Rparen    Pos        `json:"rparen"`
 }
 
 // String returns the string representation of the type.
@@ -199,12 +199,12 @@ func (t *Type) String() string {
 }
 
 type CaseExpr struct {
-	Case     Pos          // position of CASE keyword
-	Operand  Expr         // optional condition after the CASE keyword
-	Blocks   []*CaseBlock // list of WHEN/THEN pairs
-	Else     Pos          // position of ELSE keyword
-	ElseExpr Expr         // expression used by default case
-	End      Pos          // position of END keyword
+	Case     Pos          `json:"case"`
+	Operand  Expr         `json:"operand"`
+	Blocks   []*CaseBlock `json:"blocks"`
+	Else     Pos          `json:"else"`
+	ElseExpr Expr         `json:"else_expr"`
+	End      Pos          `json:"end"`
 }
 
 // String returns the string representation of the expression.
@@ -228,10 +228,10 @@ func (expr *CaseExpr) String() string {
 }
 
 type CaseBlock struct {
-	When      Pos  // position of WHEN keyword
-	Condition Expr // block condition
-	Then      Pos  // position of THEN keyword
-	Body      Expr // result expression
+	When      Pos  `json:"when"`
+	Condition Expr `json:"condition"`
+	Then      Pos  `json:"then"`
+	Body      Expr `json:"body"`
 }
 
 // String returns the string representation of the block.
@@ -240,9 +240,9 @@ func (b *CaseBlock) String() string {
 }
 
 type Null struct {
-	X     Expr  // expression being checked for null
-	Op    Token // IS or NOT token
-	OpPos Pos   // position of NOT NULL postfix operation
+	X     Expr  `json:"x"`
+	Op    Token `json:"op"`
+	OpPos Pos   `json:"op_pos"`
 }
 
 // String returns the string representation of the expression.
@@ -260,9 +260,9 @@ func (expr *Null) String() string {
 }
 
 type ExprList struct {
-	Lparen Pos    // position of left paren
-	Exprs  []Expr // list of expressions
-	Rparen Pos    // position of right paren
+	Lparen Pos    `json:"lparen"`
+	Exprs  []Expr `json:"exprs"`
+	Rparen Pos    `json:"rparen"`
 }
 
 // String returns the string representation of the expression.
@@ -280,11 +280,11 @@ func (l *ExprList) String() string {
 }
 
 type MultiPartIdent struct {
-	First  *Ident // first part eg project
-	Dot1   Pos    // dot after first segment
-	Second *Ident // Second Segment (Optional)
-	Dot2   Pos    // position of dot after 2nd
-	Name   *Ident // table name
+	First  *Ident `json:"first"`
+	Dot1   Pos    `json:"dot1"`
+	Second *Ident `json:"second"`
+	Dot2   Pos    `json:"dot2"`
+	Name   *Ident `json:"name"`
 }
 
 // String returns the string representation of the expression.
@@ -311,9 +311,9 @@ func MIdentName(ident *MultiPartIdent) string {
 }
 
 type Ident struct {
-	NamePos Pos    // identifier position
-	Name    string // identifier name
-	Tok     Token  // Token type - BIND, IDENT, TMPL
+	NamePos Pos    `json:"name_pos"`
+	Name    string `json:"name"`
+	Tok     Token  `json:"tok"`
 }
 
 // String returns the string representation of the expression.
@@ -343,9 +343,9 @@ func IdentName(ident *Ident) string {
 }
 
 type ParenExpr struct {
-	Lparen Pos  // position of left paren
-	X      Expr // parenthesized expression
-	Rparen Pos  // position of right paren
+	Lparen Pos  `json:"lparen"`
+	X      Expr `json:"x"`
+	Rparen Pos  `json:"rparen"`
 }
 
 // String returns the string representation of the expression.
@@ -354,9 +354,9 @@ func (expr *ParenExpr) String() string {
 }
 
 type Range struct {
-	X   Expr // lhs expression
-	And Pos  // position of AND keyword
-	Y   Expr // rhs expression
+	X   Expr `json:"x"`
+	And Pos  `json:"and"`
+	Y   Expr `json:"y"`
 }
 
 // String returns the string representation of the expression.
@@ -365,9 +365,9 @@ func (r *Range) String() string {
 }
 
 type QualifiedRef struct {
-	Name *MultiPartIdent // table name
-	Dot  Pos             // position of dot for *
-	Star Pos             // position of * (result column only)
+	Name *MultiPartIdent `json:"name"`
+	Dot  Pos             `json:"dot"`
+	Star Pos             `json:"star"`
 }
 
 // String returns the string representation of the expression.
@@ -379,9 +379,9 @@ func (r *QualifiedRef) String() string {
 }
 
 type UnaryExpr struct {
-	OpPos Pos   // operation position
-	Op    Token // operation
-	X     Expr  // target expression
+	OpPos Pos   `json:"op_pos"`
+	Op    Token `json:"op"`
+	X     Expr  `json:"x"`
 }
 
 // String returns the string representation of the expression.
