@@ -80,85 +80,43 @@ const (
 	operator_end
 
 	keyword_beg
-	ACTION
-	ADD
-	AFTER
-	AGG_COLUMN
-	AGG_FUNCTION
 	ALL
-	ALTER
-	ALWAYS
-	ANALYZE
 	AND
 	AS
 	ASC
-	ASTERISK
-	ATTACH
-	AUTOINCREMENT
-	BEFORE
-	BEGIN
 	BETWEEN
 	BY
-	CASCADE
 	CASE
 	CAST
-	CHECK
 	COLLATE
-	COLUMN
-	COLUMNKW
-	COMMIT
 	CONFLICT
-	CONSTRAINT
 	CREATE
 	CROSS
-	CTIME_KW
-	CURRENT
 	CURRENT_TIME
 	CURRENT_DATE
 	CURRENT_TIMESTAMP
-	DATABASE
 	DATE
-	DEFERRABLE
-	DEFERRED
 	DELETE
 	DESC
-	DETACH
 	DISTINCT
 	DO
 	DROP
-	EACH
 	ELSE
 	END
-	ESCAPE
 	EXCEPT
-	EXCLUDE
-	EXCLUSIVE
 	EXISTS
-	EXPLAIN
-	FILTER
 	FIRST
-	FOLLOWING
-	FOR
-	FOREIGN
 	FROM
 	FULL
 	FUNCTION
-	GENERATED
 	GLOB
 	GROUP
 	GROUPING
-	GROUPS
 	HAVING
 	IF
-	IF_NULL_ROW
-	IMMEDIATE
 	IN
-	INDEX
-	INDEXED
-	INITIALLY
 	INNER
 	INSERT
-	INSTEAD
 	INTERSECT
 	INTO
 	IS
@@ -174,10 +132,8 @@ const (
 	MATCHED
 	MERGE
 	NATURAL
-	NO
 	NOT
 	NOTBETWEEN
-	NOTEXISTS
 	NOTGLOB
 	NOTHING
 	NOTIN
@@ -186,71 +142,37 @@ const (
 	NOTNULL
 	NOTREGEXP
 	NULLS
-	OF
 	OFFSET
 	ON
 	OR
 	ORDER
-	OTHERS
 	OUTER
 	OVER
 	OVERWRITE
 	PARTITION
-	PLAN
-	PRAGMA
-	PRECEDING
-	PRIMARY
 	QUALIFY
-	RAISE
-	RANGE
 	RECURSIVE
-	REFERENCES
 	REGEXP
-	REGISTER
-	REINDEX
-	RELEASE
-	RENAME
 	REPLACE
-	RESTRICT
 	RETURNING
-	ROW
 	ROWID
-	ROWS
-	SAVEPOINT
 	SELECT
-	SELECT_COLUMN
 	SET
 	SETS
-	SPAN
-	STORED
-	STRICT
 	TABLE
-	TEMP
 	THEN
-	TIES
 	TIMESTAMP
-	TO
-	TRIGGER
-	TRUTH
-	UNBOUNDED
 	UNION
-	UNIQUE
 	UPDATE
 	USING
-	VACUUM
 	VALUES
-	VARIABLE
-	VECTOR
 	VIEW
-	VIRTUAL
 	WHEN
 	WHERE
 	WINDOW
 	WITH
-	WITHOUT
 	keyword_end
 
-	ANY // ???
 	token_end
 )
 
@@ -296,85 +218,43 @@ var tokens = [...]string{
 	DOT:    ".",
 	ASSIGN: ":=",
 
-	ACTION:            "ACTION",
-	ADD:               "ADD",
-	AFTER:             "AFTER",
-	AGG_COLUMN:        "AGG_COLUMN",
-	AGG_FUNCTION:      "AGG_FUNCTION",
 	ALL:               "ALL",
-	ALTER:             "ALTER",
-	ALWAYS:            "ALWAYS",
-	ANALYZE:           "ANALYZE",
 	AND:               "AND",
 	AS:                "AS",
 	ASC:               "ASC",
-	ASTERISK:          "ASTERISK",
-	ATTACH:            "ATTACH",
-	AUTOINCREMENT:     "AUTOINCREMENT",
-	BEFORE:            "BEFORE",
-	BEGIN:             "BEGIN",
 	BETWEEN:           "BETWEEN",
 	BY:                "BY",
-	CASCADE:           "CASCADE",
 	CASE:              "CASE",
 	CAST:              "CAST",
-	CHECK:             "CHECK",
 	COLLATE:           "COLLATE",
-	COLUMN:            "COLUMN",
-	COLUMNKW:          "COLUMNKW",
-	COMMIT:            "COMMIT",
 	CONFLICT:          "CONFLICT",
-	CONSTRAINT:        "CONSTRAINT",
 	CREATE:            "CREATE",
 	CROSS:             "CROSS",
-	CTIME_KW:          "CTIME_KW",
-	CURRENT:           "CURRENT",
 	CURRENT_TIME:      "CURRENT_TIME",
 	CURRENT_DATE:      "CURRENT_DATE",
 	CURRENT_TIMESTAMP: "CURRENT_TIMESTAMP",
-	DATABASE:          "DATABASE",
 	DATE:              "DATE",
-	DEFERRABLE:        "DEFERRABLE",
-	DEFERRED:          "DEFERRED",
 	DELETE:            "DELETE",
 	DESC:              "DESC",
-	DETACH:            "DETACH",
 	DISTINCT:          "DISTINCT",
 	DO:                "DO",
 	DROP:              "DROP",
-	EACH:              "EACH",
 	ELSE:              "ELSE",
 	END:               "END",
-	ESCAPE:            "ESCAPE",
 	EXCEPT:            "EXCEPT",
-	EXCLUDE:           "EXCLUDE",
-	EXCLUSIVE:         "EXCLUSIVE",
 	EXISTS:            "EXISTS",
-	EXPLAIN:           "EXPLAIN",
-	FILTER:            "FILTER",
 	FIRST:             "FIRST",
-	FOLLOWING:         "FOLLOWING",
-	FOR:               "FOR",
-	FOREIGN:           "FOREIGN",
 	FROM:              "FROM",
 	FULL:              "FULL",
 	FUNCTION:          "FUNCTION",
-	GENERATED:         "GENERATED",
 	GLOB:              "GLOB",
 	GROUP:             "GROUP",
 	GROUPING:          "GROUPING",
-	GROUPS:            "GROUPS",
 	HAVING:            "HAVING",
 	IF:                "IF",
-	IF_NULL_ROW:       "IF_NULL_ROW",
-	IMMEDIATE:         "IMMEDIATE",
 	IN:                "IN",
-	INDEX:             "INDEX",
-	INDEXED:           "INDEXED",
-	INITIALLY:         "INITIALLY",
 	INNER:             "INNER",
 	INSERT:            "INSERT",
-	INSTEAD:           "INSTEAD",
 	INTERSECT:         "INTERSECT",
 	INTO:              "INTO",
 	IS:                "IS",
@@ -389,11 +269,9 @@ var tokens = [...]string{
 	MATCH:             "MATCH",
 	MATCHED:           "MATCHED",
 	MERGE:             "MERGE",
-	NO:                "NO",
 	NATURAL:           "NATURAL",
 	NOT:               "NOT",
 	NOTBETWEEN:        "NOTBETWEEN",
-	NOTEXISTS:         "NOTEXISTS",
 	NOTGLOB:           "NOTGLOB",
 	NOTHING:           "NOTHING",
 	NOTIN:             "NOTIN",
@@ -402,82 +280,43 @@ var tokens = [...]string{
 	NOTNULL:           "NOTNULL",
 	NOTREGEXP:         "NOTREGEXP",
 	NULLS:             "NULLS",
-	OF:                "OF",
 	OFFSET:            "OFFSET",
 	ON:                "ON",
 	OR:                "OR",
 	ORDER:             "ORDER",
-	OTHERS:            "OTHERS",
 	OUTER:             "OUTER",
 	OVER:              "OVER",
 	OVERWRITE:         "OVERWRITE",
 	PARTITION:         "PARTITION",
-	PLAN:              "PLAN",
-	PRAGMA:            "PRAGMA",
-	PRECEDING:         "PRECEDING",
-	PRIMARY:           "PRIMARY",
 	QUALIFY:           "QUALIFY",
-	RAISE:             "RAISE",
-	RANGE:             "RANGE",
 	RECURSIVE:         "RECURSIVE",
-	REFERENCES:        "REFERENCES",
 	REGEXP:            "REGEXP",
-	REGISTER:          "REGISTER",
-	REINDEX:           "REINDEX",
-	RELEASE:           "RELEASE",
-	RENAME:            "RENAME",
 	REPLACE:           "REPLACE",
-	RESTRICT:          "RESTRICT",
 	RETURNING:         "RETURNING",
-	ROW:               "ROW",
 	ROWID:             "ROWID",
-	ROWS:              "ROWS",
-	SAVEPOINT:         "SAVEPOINT",
 	SELECT:            "SELECT",
-	SELECT_COLUMN:     "SELECT_COLUMN",
 	SET:               "SET",
 	SETS:              "SETS",
-	SPAN:              "SPAN",
-	STORED:            "STORED",
-	STRICT:            "STRICT",
 	TABLE:             "TABLE",
-	TEMP:              "TEMP",
 	THEN:              "THEN",
-	TIES:              "TIES",
 	TIMESTAMP:         "TIMESTAMP",
-	TO:                "TO",
-	TRIGGER:           "TRIGGER",
-	TRUTH:             "TRUTH",
-	UNBOUNDED:         "UNBOUNDED",
 	UNION:             "UNION",
-	UNIQUE:            "UNIQUE",
 	UPDATE:            "UPDATE",
 	USING:             "USING",
-	VACUUM:            "VACUUM",
 	VALUES:            "VALUES",
-	VARIABLE:          "VARIABLE",
-	VECTOR:            "VECTOR",
 	VIEW:              "VIEW",
-	VIRTUAL:           "VIRTUAL",
 	WHEN:              "WHEN",
 	WHERE:             "WHERE",
 	WINDOW:            "WINDOW",
 	WITH:              "WITH",
-	WITHOUT:           "WITHOUT",
 }
 
 // A list of keywords that can be used as unquoted identifiers.
 var bareTokens = [...]Token{
-	ACTION, AFTER, ALWAYS, ANALYZE, ASC, ATTACH, BEFORE, BEGIN, BY,
-	CASCADE, CAST, COLUMN, CONFLICT, CROSS, CURRENT, CURRENT_DATE,
-	CURRENT_TIME, CURRENT_TIMESTAMP, DATABASE, DEFERRED, DESC, DETACH, DO,
-	EACH, END, EXCLUDE, EXCLUSIVE, EXPLAIN, FILTER, FIRST, FOLLOWING,
-	FOR, FULL, GENERATED, GLOB, GROUPS, IF, IMMEDIATE, INDEXED, INITIALLY,
-	INNER, INSTEAD, LAST, LEFT, LIKE, MATCH, NATURAL, NO, NULLS, OF,
-	OFFSET, OTHERS, OUTER, OVER, PARTITION, PLAN, PRAGMA, PRECEDING,
-	RAISE, RANGE, RECURSIVE, REGEXP, REINDEX, RELEASE, RENAME, REPLACE,
-	RESTRICT, ROW, ROWS, SAVEPOINT, TEMP, TIES, TRIGGER,
-	UNBOUNDED, VACUUM, VIEW, VIRTUAL, WINDOW, WITH, WITHOUT,
+	ASC, BY, CAST, CONFLICT, CROSS, CURRENT_DATE, CURRENT_TIME,
+	CURRENT_TIMESTAMP, DESC, DO, END, FIRST, FULL, GLOB, IF, INNER,
+	LAST, LEFT, LIKE, MATCH, NATURAL, NULLS, OFFSET, OUTER, OVER,
+	PARTITION, RECURSIVE, REGEXP, REPLACE, VIEW, WINDOW, WITH,
 }
 
 func (t Token) String() string {
@@ -572,8 +411,8 @@ func (t Token) Precedence() int {
 		return 4
 	case GT, LE, LT, GE, EQN:
 		return 5
-	case ESCAPE:
-		return 6
+	//case ESCAPE:
+	//	return 6
 	case BITAND, BITOR, LSHIFT, RSHIFT:
 		return 7
 	case PLUS, MINUS:

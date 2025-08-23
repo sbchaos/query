@@ -53,10 +53,6 @@ func TestScanner_Scan(t *testing.T) {
 		})
 	})
 
-	t.Run("KEYWORD", func(t *testing.T) {
-		AssertScan(t, `BEGIN`, query.BEGIN, `BEGIN`)
-	})
-
 	t.Run("STRING", func(t *testing.T) {
 		t.Run("OK", func(t *testing.T) {
 			AssertScan(t, `'this is ''a'' string'`, query.STRING, `this is 'a' string`)
