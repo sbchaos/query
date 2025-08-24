@@ -193,10 +193,7 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 			return nil, err
 		}
 		return &UnaryExpr{OpPos: pos, Op: tok, X: expr}, nil
-	case tok == WITH:
-		p.unscan()
-		return p.parseWithExpr()
-	case tok == SELECT:
+	case tok == SELECT, tok == WITH:
 		p.unscan()
 		selectStmt, err := p.parseSelectStatement(false, nil)
 		return SelectExpr{selectStmt}, err
@@ -251,24 +248,6 @@ func (p *Parser) handleSpecialCases(pos Pos, tok Token, lit string) (*Ident, err
 	}
 
 	return nil, &Error{Pos: pos}
-}
-
-func (p *Parser) parseWithExpr() (*SelectExpr, error) {
-	withClause, err := p.parseWithClause()
-	if err != nil {
-		return nil, err
-	}
-
-	switch p.peek() {
-	case SELECT, VALUES:
-		selectStmt, err := p.parseSelectStatement(false, withClause)
-		if err != nil {
-			return nil, err
-		}
-		return &SelectExpr{selectStmt}, nil
-	default:
-		return nil, p.errorExpected(p.pos, p.tok, "SELECT after With")
-	}
 }
 
 func (p *Parser) parseMultiIdent(ident *Ident) (*MultiPartIdent, Pos) {

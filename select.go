@@ -48,6 +48,7 @@ type SelectStatement struct {
 	Windows []*Window `json:"windows"`
 
 	Union     Pos              `json:"union"`
+	UnionDist Pos              `json:"union_dist"`
 	UnionAll  Pos              `json:"union_all"`
 	Intersect Pos              `json:"intersect"`
 	Compound  *SelectStatement `json:"compound"`
@@ -152,6 +153,9 @@ func (s *SelectStatement) String() string {
 			buf.WriteString(" UNION")
 			if s.UnionAll.IsValid() {
 				buf.WriteString(" ALL")
+			}
+			if s.UnionDist.IsValid() {
+				buf.WriteString(" DISTINCT ")
 			}
 		case s.Intersect.IsValid():
 			buf.WriteString(" INTERSECT")
@@ -260,7 +264,11 @@ func (c *ResultColumn) String() string {
 	} else if c.Alias != nil {
 		return fmt.Sprintf("%s AS %s", c.Expr.String(), c.Alias.String())
 	}
-	return c.Expr.String()
+	exp := c.Expr.String()
+	if c.Except.IsValid() {
+		return exp + " EXCEPT " + c.ExceptCol.String()
+	}
+	return exp
 }
 
 // Source represents a table or subquery.

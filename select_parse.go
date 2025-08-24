@@ -186,6 +186,9 @@ func (p *Parser) parseSelectStatement(compounded bool, withClause *WithClause) (
 			if p.peek() == ALL {
 				stmt.UnionAll, _, _ = p.scan()
 			}
+			if p.peek() == DISTINCT {
+				stmt.UnionDist, _, _ = p.scan()
+			}
 		} else if tok == INTERSECT {
 			stmt.Intersect, _, _ = p.scan()
 		}
@@ -267,9 +270,18 @@ func (p *Parser) parseResultColumn() (_ *ResultColumn, err error) {
 	}
 
 	// If we have a qualified ref w/ a star, don't allow an alias.
-	//if ref, ok := col.Expr.(*QualifiedRef); ok && ref.Star.IsValid() {
-	//	return &col, nil
-	//}
+	if ref, ok := col.Expr.(*QualifiedRef); ok && ref.Star.IsValid() {
+		if p.peek() == EXCEPT {
+			col.Except, _, _ = p.scan()
+			expr, err := p.ParseExpr()
+			if err != nil {
+				return &col, err
+			}
+			col.ExceptCol = expr
+		}
+
+		return &col, nil
+	}
 
 	// If "AS" is next, the alias must follow.
 	// Otherwise it can optionally be an IDENT alias.
@@ -333,6 +345,23 @@ func (p *Parser) parseSource() (source Source, err error) {
 		// Exit immediately if not part of a join operator.
 		switch p.peek() {
 		case COMMA, NATURAL, FULL, LEFT, INNER, CROSS, JOIN:
+		case LATERAL:
+			view, err := p.parseLateralView()
+			if err != nil {
+				return source, err
+			}
+
+			j1, ok := source.(*JoinClause)
+			if ok {
+				x1, ok := j1.X.(*QualifiedTableName)
+				if ok {
+					x1.LateralViews = append(x1.LateralViews, view)
+				}
+			} else {
+				return source, p.errorExpected(p.pos, p.tok, "join clause Lateral View")
+			}
+			return source, nil
+
 		default:
 			return source, nil
 		}

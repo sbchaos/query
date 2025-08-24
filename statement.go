@@ -27,10 +27,10 @@ func (*DropTableStatement) stmt()   {}
 func (*MergeStatement) stmt()       {}
 
 type SetStatement struct {
-	Set   Pos
-	Key   string
-	Equal Pos
-	Value string
+	Set   Pos    `json:"set"`
+	Key   string `json:"key"`
+	Equal Pos    `json:"equal"`
+	Value string `json:"value"`
 }
 
 func (s *SetStatement) String() string {
@@ -39,8 +39,8 @@ func (s *SetStatement) String() string {
 
 type DeclarationStatement struct {
 	Name  *Ident `json:"name"`
-	Value Expr   `json:"value"`
-	Type  Expr   `json:"type"`
+	Value Expr   `json:"value,omitempty"`
+	Type  Expr   `json:"type,omitempty"`
 }
 
 func (s *DeclarationStatement) String() string {

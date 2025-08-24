@@ -180,13 +180,13 @@ func (p *Parser) parseInsertStatement(withClause *WithClause) (_ *InsertStatemen
 			stmt.Columns = append(stmt.Columns, col)
 
 			if p.peek() == RP {
+				stmt.ColumnsRparen, _, _ = p.scan()
 				break
 			} else if p.peek() != COMMA {
 				return &stmt, p.errorExpected(p.pos, p.tok, "comma or right paren")
 			}
 			p.scan()
 		}
-		stmt.ColumnsRparen, _, _ = p.scan()
 	}
 
 	switch p.peek() {
@@ -221,7 +221,7 @@ func (p *Parser) parseInsertStatement(withClause *WithClause) (_ *InsertStatemen
 			}
 			p.scan()
 		}
-	case SELECT:
+	case SELECT, WITH:
 		if stmt.Select, err = p.parseSelectStatement(false, nil); err != nil {
 			return &stmt, err
 		}
