@@ -47,8 +47,8 @@ func TestParser_ParseStatement2(t *testing.T) {
 				Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(15), Name: "TO_DATE", Tok: query.IDENT}},
 				Lparen: pos(22),
 				Rparen: pos(45),
-				Args: []query.Expr{
-					&query.StringLit{ValuePos: pos(23), Value: "{{ .DSTART | Date }}"},
+				Args: []*query.Params{
+					{X: &query.StringLit{ValuePos: pos(23), Value: "{{ .DSTART | Date }}"}},
 				},
 			},
 		})
@@ -103,8 +103,8 @@ func TestParser_ParseStatement2(t *testing.T) {
 							Tok:     query.TIMESTAMP,
 						}},
 						Lparen: pos(20),
-						Args: []query.Expr{
-							&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(21), Name: "@end_date", Tok: query.BIND}},
+						Args: []*query.Params{
+							{X: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(21), Name: "@end_date", Tok: query.BIND}}},
 						},
 						Rparen: pos(30),
 					},
@@ -232,12 +232,12 @@ func TestParser_ParseStatement2(t *testing.T) {
 						Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(34), Name: "abs", Tok: query.IDENT}},
 						Lparen: pos(37),
 						Rparen: pos(46),
-						Args: []query.Expr{
-							&query.Call{
+						Args: []*query.Params{
+							{X: &query.Call{
 								Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(38), Name: "random", Tok: query.IDENT}},
 								Lparen: pos(44),
 								Rparen: pos(45),
-							},
+							}},
 						},
 					},
 				},
@@ -1292,8 +1292,8 @@ WHEN NOT MATCHED THEN INSERT (id, place) VALUES (src.id, src.place);`, &query.Me
 				Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(36), Name: "IF", Tok: query.IF}},
 				Lparen: pos(38),
 				Rparen: pos(65),
-				Args: []query.Expr{
-					&query.ParenExpr{
+				Args: []*query.Params{
+					{X: &query.ParenExpr{
 						Lparen: pos(39),
 						Rparen: pos(51),
 						X: &query.BinaryExpr{
@@ -1302,10 +1302,20 @@ WHEN NOT MATCHED THEN INSERT (id, place) VALUES (src.id, src.place);`, &query.Me
 							Op:    query.LE,
 							Y:     &query.NumberLit{ValuePos: pos(49), Value: "50"},
 						},
-					},
-					&query.BoolLit{ValuePos: pos(54), Value: true},
-					&query.BoolLit{ValuePos: pos(60), Value: false},
+					}},
+					{X: &query.BoolLit{ValuePos: pos(54), Value: true}},
+					{X: &query.BoolLit{ValuePos: pos(60), Value: false}},
 				},
+			},
+		})
+	})
+
+	t.Run("Truncate", func(t *testing.T) {
+		AssertParseStatement(t, `TRUNCATE TABLE tbl1;`, &query.TruncateStatement{
+			Truncate: pos(0),
+			Table:    pos(9),
+			Name: &query.MultiPartIdent{
+				Name: &query.Ident{NamePos: pos(15), Name: "tbl1", Tok: query.IDENT},
 			},
 		})
 	})

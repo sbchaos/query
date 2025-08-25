@@ -166,6 +166,7 @@ const (
 	TABLE
 	THEN
 	TIMESTAMP
+	TRUNCATE
 	UNION
 	UPDATE
 	USING
@@ -309,6 +310,7 @@ var tokens = [...]string{
 	TABLE:             "TABLE",
 	THEN:              "THEN",
 	TIMESTAMP:         "TIMESTAMP",
+	TRUNCATE:          "TRUNCATE",
 	UNION:             "UNION",
 	UPDATE:            "UPDATE",
 	USING:             "USING",

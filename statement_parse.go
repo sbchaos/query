@@ -54,6 +54,8 @@ func (p *Parser) parseNonExplainStatement() (Statement, error) {
 		return p.parseSetStatement()
 	case FUNCTION:
 		return p.parseFunctionStatement()
+	case TRUNCATE:
+		return p.parseTruncateStatement()
 	case MERGE:
 		return p.parseMergeStatement()
 	case CREATE:
@@ -768,6 +770,11 @@ func (p *Parser) parseMatchedCondition() (*MatchedCondition, error) {
 	if p.peek() == INSERT {
 		stmt.Insert, _, _ = p.scan()
 
+		if p.peek() == STAR {
+			stmt.Star, _, _ = p.scan()
+			return &stmt, nil
+		}
+
 		if p.peek() == LP {
 			cols, err := p.parseExprList()
 			if err != nil {
@@ -845,5 +852,25 @@ func (p *Parser) parseFunctionStatement() (*FunctionStatement, error) {
 		stmt.End, _, _ = p.scan()
 	}
 
+	return &stmt, nil
+}
+
+func (p *Parser) parseTruncateStatement() (*TruncateStatement, error) {
+	assert(p.peek() == TRUNCATE)
+	var stmt TruncateStatement
+
+	stmt.Truncate, _, _ = p.scan()
+
+	if p.peek() != TABLE {
+		return &stmt, p.errorExpected(p.pos, p.tok, "TABLE")
+	}
+	stmt.Table, _, _ = p.scan()
+
+	name, err := p.parseMultiPartIdent()
+	if err != nil {
+		return &stmt, err
+	}
+
+	stmt.Name = name
 	return &stmt, nil
 }

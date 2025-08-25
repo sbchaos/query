@@ -132,12 +132,26 @@ func (expr *BinaryExpr) String() string {
 	}
 }
 
+type Params struct {
+	X    Expr  `json:"x"`
+	As   Pos   `json:"as"`
+	Type *Type `json:"type"`
+}
+
+func (expr *Params) String() string {
+	x := expr.X.String()
+	if expr.As.IsValid() {
+		return x + " AS " + expr.Type.String()
+	}
+	return x
+}
+
 type Call struct {
 	Name     *MultiPartIdent `json:"name"`
 	Lparen   Pos             `json:"lparen"`
 	Star     Pos             `json:"star"`
 	Distinct Pos             `json:"distinct"`
-	Args     []Expr          `json:"args"`
+	Args     []*Params       `json:"args"`
 	Rparen   Pos             `json:"rparen"`
 	Over     *OverClause     `json:"over"`
 }

@@ -96,9 +96,9 @@ func TestCall_String(t *testing.T) {
 	AssertExprStringer(t, &query.Call{
 		Name:     &query.MultiPartIdent{Name: &query.Ident{Name: "foo", Tok: query.IDENT}},
 		Distinct: pos(0),
-		Args: []query.Expr{
-			&query.NullLit{},
-			&query.NullLit{},
+		Args: []*query.Params{
+			{X: &query.NullLit{}},
+			{X: &query.NullLit{}},
 		},
 	}, `foo(DISTINCT NULL, NULL)`)
 }
@@ -431,9 +431,9 @@ func TestParser_ParseExpr(t *testing.T) {
 				Name: &query.Ident{NamePos: pos(0), Name: "sum", Tok: query.IDENT},
 			},
 			Lparen: pos(3),
-			Args: []query.Expr{
-				&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(4), Name: "foo", Tok: query.IDENT}},
-				&query.NumberLit{ValuePos: pos(9), Value: "123"},
+			Args: []*query.Params{
+				{X: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(4), Name: "foo", Tok: query.IDENT}}},
+				{X: &query.NumberLit{ValuePos: pos(9), Value: "123"}},
 			},
 			Rparen: pos(12),
 		})
@@ -443,8 +443,8 @@ func TestParser_ParseExpr(t *testing.T) {
 			},
 			Lparen:   pos(3),
 			Distinct: pos(4),
-			Args: []query.Expr{
-				&query.StringLit{ValuePos: pos(13), Value: "foo"},
+			Args: []*query.Params{
+				{X: &query.StringLit{ValuePos: pos(13), Value: "foo"}},
 			},
 			Rparen: pos(18),
 		})
@@ -453,19 +453,19 @@ func TestParser_ParseExpr(t *testing.T) {
 				Name: &query.Ident{NamePos: pos(0), Name: "sum", Tok: query.IDENT},
 			},
 			Lparen: pos(3),
-			Args: []query.Expr{
-				&query.NumberLit{ValuePos: pos(4), Value: "1"},
-				&query.Call{
+			Args: []*query.Params{
+				{X: &query.NumberLit{ValuePos: pos(4), Value: "1"}},
+				{X: &query.Call{
 					Name: &query.MultiPartIdent{
 						Name: &query.Ident{NamePos: pos(7), Name: "sum", Tok: query.IDENT},
 					},
 					Lparen: pos(10),
-					Args: []query.Expr{
-						&query.NumberLit{ValuePos: pos(11), Value: "2"},
-						&query.NumberLit{ValuePos: pos(14), Value: "3"},
+					Args: []*query.Params{
+						{X: &query.NumberLit{ValuePos: pos(11), Value: "2"}},
+						{X: &query.NumberLit{ValuePos: pos(14), Value: "3"}},
 					},
 					Rparen: pos(15),
-				},
+				}},
 			},
 			Rparen: pos(16),
 		})
@@ -474,24 +474,25 @@ func TestParser_ParseExpr(t *testing.T) {
 				Name: &query.Ident{NamePos: pos(0), Name: "sum", Tok: query.IDENT},
 			},
 			Lparen: pos(3),
-			Args: []query.Expr{
-				&query.Call{
+			Args: []*query.Params{
+				{X: &query.Call{
 					Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(4), Name: "sum", Tok: query.IDENT}},
 					Lparen: pos(7),
-					Args: []query.Expr{
-						&query.NumberLit{ValuePos: pos(8), Value: "1"},
-						&query.NumberLit{ValuePos: pos(10), Value: "2"},
+					Args: []*query.Params{
+						{X: &query.NumberLit{ValuePos: pos(8), Value: "1"}},
+						{X: &query.NumberLit{ValuePos: pos(10), Value: "2"}},
 					},
 					Rparen: pos(11),
-				}, &query.Call{
+				}},
+				{X: &query.Call{
 					Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "sum", Tok: query.IDENT}},
 					Lparen: pos(17),
-					Args: []query.Expr{
-						&query.NumberLit{ValuePos: pos(18), Value: "3"},
-						&query.NumberLit{ValuePos: pos(21), Value: "4"},
+					Args: []*query.Params{
+						{X: &query.NumberLit{ValuePos: pos(18), Value: "3"}},
+						{X: &query.NumberLit{ValuePos: pos(21), Value: "4"}},
 					},
 					Rparen: pos(22),
-				},
+				}},
 			},
 			Rparen: pos(23),
 		})

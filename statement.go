@@ -13,6 +13,7 @@ func (*CreateTableStatement) node() {}
 func (*DropTableStatement) node()   {}
 func (*MergeStatement) node()       {}
 func (*FunctionStatement) node()    {}
+func (*TruncateStatement) node()    {}
 
 type Statement interface {
 	Node
@@ -27,6 +28,7 @@ func (*CreateTableStatement) stmt() {}
 func (*DropTableStatement) stmt()   {}
 func (*MergeStatement) stmt()       {}
 func (*FunctionStatement) stmt()    {}
+func (*TruncateStatement) stmt()    {}
 
 type SetStatement struct {
 	Set   Pos    `json:"set"`
@@ -438,6 +440,7 @@ type MatchedCondition struct {
 	Delete Pos `json:"delete"`
 
 	Insert     Pos       `json:"insert"`
+	Star       Pos       `json:"star"`
 	ColList    *ExprList `json:"col_list"`
 	Values     Pos       `json:"values"`
 	ValueLists *ExprList `json:"value_lists"`
@@ -480,4 +483,14 @@ type FunctionStatement struct {
 
 func (s *FunctionStatement) String() string {
 	return "FunctionStatement"
+}
+
+type TruncateStatement struct {
+	Truncate Pos             `json:"truncate"`
+	Table    Pos             `json:"table"`
+	Name     *MultiPartIdent `json:"name"`
+}
+
+func (s *TruncateStatement) String() string {
+	return "TRUNCATE TABLE " + s.Name.String()
 }

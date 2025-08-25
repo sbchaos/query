@@ -453,12 +453,22 @@ func (p *Parser) parseCall(name *MultiPartIdent) (*Call, error) {
 			expr.Distinct, _, _ = p.scan()
 		}
 		for p.peek() != RP {
-			arg, err := p.ParseExpr()
+			var p1 Params
+			x, err := p.ParseExpr()
 			if err != nil {
 				return &expr, err
 			}
+			p1.X = x
 
-			expr.Args = append(expr.Args, arg)
+			if p.peek() == AS {
+				a1, _, _ := p.scan()
+				p1.As = a1
+				if p1.Type, err = p.parseType(); err != nil {
+					return &expr, err
+				}
+			}
+
+			expr.Args = append(expr.Args, &p1)
 
 			if tok := p.peek(); tok == COMMA {
 				p.scan()
