@@ -363,6 +363,20 @@ func (p *Parser) parseBinaryExpr(prec1 int) (expr Expr, err error) {
 				Op:    op,
 				Y:     rng,
 			}
+		case LSB:
+			p1, t1, l1 := p.scan()
+			var idx NumberLit
+			if t1 == INTEGER || t1 == FLOAT {
+				idx = NumberLit{ValuePos: p1, Value: l1}
+			} else {
+				return nil, p.errorExpected(p.pos, p.tok, "number")
+			}
+			if p.peek() != RSB {
+				return nil, p.errorExpected(p.pos, p.tok, "]")
+			}
+			p2, _, _ := p.scan()
+
+			return &IndexExpr{X: x, LBrack: pos, Index: &idx, RBrack: p2}, nil
 
 		default:
 			y, err := p.parseBinaryExpr(op.Precedence() + 1)

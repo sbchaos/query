@@ -28,6 +28,7 @@ func (*ParenExpr) node()      {}
 func (*Range) node()          {}
 func (*QualifiedRef) node()   {}
 func (*UnaryExpr) node()      {}
+func (*IndexExpr) node()      {}
 func (SelectExpr) node()      {}
 
 // Expression Types
@@ -43,6 +44,7 @@ func (*ParenExpr) expr()      {}
 func (*Range) expr()          {}
 func (*QualifiedRef) expr()   {}
 func (*UnaryExpr) expr()      {}
+func (*IndexExpr) expr()      {}
 func (SelectExpr) expr()      {}
 
 type BinaryExpr struct {
@@ -409,4 +411,15 @@ func (expr *UnaryExpr) String() string {
 // SelectExpr represents a SELECT statement inside an expression.
 type SelectExpr struct {
 	*SelectStatement
+}
+
+type IndexExpr struct {
+	X      Expr       `json:"x"`
+	LBrack Pos        `json:"lbrack"`
+	Index  *NumberLit `json:"index"`
+	RBrack Pos        `json:"rbrack"`
+}
+
+func (expr *IndexExpr) String() string {
+	return expr.X.String() + "[" + expr.Index.String() + "]"
 }

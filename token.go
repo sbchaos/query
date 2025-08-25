@@ -429,7 +429,7 @@ func (t Token) Precedence() int {
 		return 8
 	case STAR, SLASH, REM:
 		return 9
-	case CONCAT, JSON_EXTRACT_JSON, JSON_EXTRACT_SQL:
+	case CONCAT, JSON_EXTRACT_JSON, JSON_EXTRACT_SQL, LSB:
 		return 10
 	case BITNOT:
 		return 11
