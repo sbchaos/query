@@ -171,9 +171,19 @@ func (p *Parser) parseInsertStatement(withClause *WithClause) (_ *InsertStatemen
 		}
 	}
 
-	// Parse optional column list.
+	columnList := false
 	if p.peek() == LP {
-		stmt.ColumnsLparen, _, _ = p.scan()
+		lparen, _, _ := p.scan()
+		if p.peek() == SELECT || p.peek() == WITH {
+			stmt.SelLparen = lparen
+		} else {
+			columnList = true
+			stmt.ColumnsLparen = lparen
+		}
+	}
+
+	// Parse optional column list.
+	if columnList {
 		for {
 			col, err := p.parseIdent("column name")
 			if err != nil {
@@ -229,6 +239,10 @@ func (p *Parser) parseInsertStatement(withClause *WithClause) (_ *InsertStatemen
 		}
 	default:
 		return &stmt, p.errorExpected(p.pos, p.tok, "VALUES, SELECT, or DEFAULT VALUES")
+	}
+
+	if p.peek() == RP {
+		stmt.SelRparen, _, _ = p.scan()
 	}
 
 	// Parse optional upsert clause.

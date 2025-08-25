@@ -56,12 +56,12 @@ func (s *DeclarationStatement) String() string {
 }
 
 type InsertStatement struct {
-	WithClause *WithClause `json:"with_clause"`
+	WithClause *WithClause `json:"with_clause,omitempty"`
 
 	Insert    Pos `json:"insert"`
-	Replace   Pos `json:"replace"`
-	Into      Pos `json:"into"`
-	Overwrite Pos `json:"overwrite"`
+	Replace   Pos `json:"replace,omitempty"`
+	Into      Pos `json:"into,omitempty"`
+	Overwrite Pos `json:"overwrite,omitempty"`
 	TablePos  Pos `json:"table_pos"`
 
 	Table *MultiPartIdent `json:"table"`
@@ -75,7 +75,9 @@ type InsertStatement struct {
 	Values     Pos         `json:"values"`
 	ValueLists []*ExprList `json:"value_lists"`
 
-	Select *SelectStatement `json:"select"`
+	SelLparen Pos              `json:"sel_lparen"`
+	Select    *SelectStatement `json:"select"`
+	SelRparen Pos              `json:"sel_rparen"`
 
 	Default       Pos `json:"default"`
 	DefaultValues Pos `json:"default_values"`

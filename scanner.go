@@ -196,12 +196,11 @@ func (s *Scanner) scanQuotedIdent() (Pos, Token, string) {
 		ch, _ := s.read()
 		if ch == -1 {
 			return pos, ILLEGAL, string(endCh) + s.buf.String()
+		} else if ch == '\\' {
+			ch2, _ := s.read()
+			s.buf.WriteRune(ch2)
+			continue
 		} else if ch == endCh {
-			if s.peek() == endCh { // escaped quote
-				s.read()
-				s.buf.WriteRune(endCh)
-				continue
-			}
 			return pos, tok, s.buf.String()
 		}
 		s.buf.WriteRune(ch)

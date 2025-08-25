@@ -278,12 +278,27 @@ func (p *Parser) parseMultiIdent(ident *Ident) (*MultiPartIdent, Pos) {
 	pos2, tok2, lit2 := p.scan()
 	ident3 := &Ident{Name: lit2, NamePos: pos2, Tok: tok2}
 
+	if p.peek() != DOT {
+		return &MultiPartIdent{First: ident, Dot1: dot1, Second: ident2, Dot2: dot2, Name: ident3}, emptyPos
+	}
+
+	dot3, _, _ := p.scan()
+	if !isIdentToken(p.peek()) {
+		return &MultiPartIdent{First: ident, Dot1: dot1, Second: ident2, Dot2: dot2, Name: ident3}, dot3
+	}
+
+	// Next ident
+	pos3, tok3, lit3 := p.scan()
+	ident4 := &Ident{Name: lit3, NamePos: pos3, Tok: tok3}
+
 	return &MultiPartIdent{
 		First:  ident,
 		Dot1:   dot1,
 		Second: ident2,
 		Dot2:   dot2,
-		Name:   ident3,
+		Third:  ident3,
+		Dot3:   dot3,
+		Name:   ident4,
 	}, emptyPos
 }
 

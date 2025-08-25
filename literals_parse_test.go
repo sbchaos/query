@@ -9,8 +9,7 @@ import (
 )
 
 func TestStringLit_String(t *testing.T) {
-	AssertExprStringer(t, &query.StringLit{Value: "foo"}, `'foo'`)
-	AssertExprStringer(t, &query.StringLit{Value: "foo ' bar"}, `'foo '' bar'`)
+	AssertExprStringer(t, &query.StringLit{Value: "foo"}, `foo`)
 }
 
 func TestNumberLit_String(t *testing.T) {

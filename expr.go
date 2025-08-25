@@ -284,6 +284,8 @@ type MultiPartIdent struct {
 	Dot1   Pos    `json:"dot1"`
 	Second *Ident `json:"second"`
 	Dot2   Pos    `json:"dot2"`
+	Third  *Ident `json:"third"`
+	Dot3   Pos    `json:"dot3"`
 	Name   *Ident `json:"name"`
 }
 
@@ -296,6 +298,10 @@ func (m *MultiPartIdent) String() string {
 	}
 	if m.Second != nil {
 		buf.WriteString(m.Second.String())
+		buf.WriteString(".")
+	}
+	if m.Third != nil {
+		buf.WriteString(m.Third.String())
 		buf.WriteString(".")
 	}
 	buf.WriteString(m.Name.String())

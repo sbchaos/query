@@ -115,6 +115,60 @@ func TestParser_ParseStatement(t *testing.T) {
 			},
 		})
 
+		AssertParseStatement(t, `SELECT tbl.ab.struct1.part1 FROM tbl;`, &query.SelectStatement{
+			Select: pos(0),
+			Columns: []*query.ResultColumn{
+				{Expr: &query.MultiPartIdent{
+					First:  &query.Ident{NamePos: pos(7), Name: "tbl", Tok: query.IDENT},
+					Dot1:   pos(10),
+					Second: &query.Ident{NamePos: pos(11), Name: "ab", Tok: query.IDENT},
+					Dot2:   pos(13),
+					Third:  &query.Ident{NamePos: pos(14), Name: "struct1", Tok: query.IDENT},
+					Dot3:   pos(21),
+					Name:   &query.Ident{NamePos: pos(22), Name: "part1", Tok: query.IDENT},
+				}},
+			},
+			From: pos(28),
+			Source: &query.QualifiedTableName{
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(33), Name: "tbl", Tok: query.IDENT}},
+			},
+		})
+		AssertParseStatement(t, `SELECT 10 AS t1, CONCAT('\'', NVL(c1, NULL)) AS t2 FROM tbl1`, &query.SelectStatement{
+			Select: pos(0),
+			Columns: []*query.ResultColumn{
+				{
+					Expr:  &query.NumberLit{ValuePos: pos(7), Value: "10"},
+					As:    pos(10),
+					Alias: &query.Ident{Name: "t1", NamePos: pos(13), Tok: query.IDENT},
+				},
+				{
+					Expr: &query.Call{
+						Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(17), Name: "CONCAT", Tok: query.IDENT}},
+						Lparen: pos(23),
+						Rparen: pos(43),
+						Args: []query.Expr{
+							&query.StringLit{ValuePos: pos(24), Value: "'"},
+							&query.Call{
+								Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(30), Name: "NVL", Tok: query.IDENT}},
+								Lparen: pos(33),
+								Rparen: pos(42),
+								Args: []query.Expr{
+									&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(34), Name: "c1", Tok: query.IDENT}},
+									&query.NullLit{Pos: pos(38)},
+								},
+							},
+						},
+					},
+					As:    pos(45),
+					Alias: &query.Ident{NamePos: pos(48), Name: "t2", Tok: query.IDENT},
+				},
+			},
+			From: pos(51),
+			Source: &query.QualifiedTableName{
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(56), Name: "tbl1", Tok: query.IDENT}},
+			},
+		})
+
 		AssertParseStatement(t, `SELECT DISTINCT * FROM tbl`, &query.SelectStatement{
 			Select:   pos(0),
 			Distinct: pos(7),

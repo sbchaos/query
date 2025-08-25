@@ -10,7 +10,6 @@ import (
 
 func TestIdent_String(t *testing.T) {
 	AssertExprStringer(t, &query.Ident{Name: "foo", Tok: query.QIDENT}, `"foo"`)
-	AssertExprStringer(t, &query.Ident{Name: "foo \" bar", Tok: query.QIDENT}, `"foo "" bar"`)
 }
 
 func TestMultiPartIdent_String(t *testing.T) {

@@ -15,7 +15,7 @@ func TestScanner_Scan(t *testing.T) {
 			AssertScan(t, `foo_BAR123`, query.IDENT, `foo_BAR123`)
 		})
 		t.Run("Quoted", func(t *testing.T) {
-			AssertScan(t, `"crazy ~!#*&# column name"" foo"`, query.QIDENT, `crazy ~!#*&# column name" foo`)
+			AssertScan(t, `"crazy ~!#*&# column name\" foo"`, query.QIDENT, `crazy ~!#*&# column name" foo`)
 		})
 		t.Run("NoEndQuote", func(t *testing.T) {
 			AssertScan(t, `"unfinished`, query.ILLEGAL, `"unfinished`)
@@ -55,10 +55,13 @@ func TestScanner_Scan(t *testing.T) {
 
 	t.Run("STRING", func(t *testing.T) {
 		t.Run("OK", func(t *testing.T) {
-			AssertScan(t, `'this is ''a'' string'`, query.STRING, `this is 'a' string`)
+			AssertScan(t, `'this is \'a\' string'`, query.STRING, `this is 'a' string`)
 		})
 		t.Run("Allow ticks", func(t *testing.T) {
 			AssertScan(t, "`table`", query.TSTRING, `table`)
+		})
+		t.Run("With escaped", func(t *testing.T) {
+			AssertScan(t, `'\''`, query.STRING, `'`)
 		})
 		t.Run("NoEndQuote", func(t *testing.T) {
 			AssertScan(t, `'unfinished`, query.ILLEGAL, `'unfinished`)

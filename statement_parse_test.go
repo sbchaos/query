@@ -274,6 +274,31 @@ func TestParser_ParseStatement2(t *testing.T) {
 				},
 			},
 		})
+		AssertParseStatement(t, `INSERT INTO tbl1 (SELECT a1, b1, c1 FROM tbl2)`, &query.InsertStatement{
+			Insert:    pos(0),
+			Into:      pos(7),
+			Table:     &query.MultiPartIdent{Name: &query.Ident{Name: "tbl1", NamePos: pos(12), Tok: query.IDENT}},
+			SelLparen: pos(17),
+			SelRparen: pos(45),
+			Select: &query.SelectStatement{
+				Select: pos(18),
+				From:   pos(36),
+				Columns: []*query.ResultColumn{
+					{
+						Expr: &query.MultiPartIdent{Name: &query.Ident{Name: "a1", NamePos: pos(25), Tok: query.IDENT}},
+					},
+					{
+						Expr: &query.MultiPartIdent{Name: &query.Ident{Name: "b1", NamePos: pos(29), Tok: query.IDENT}},
+					},
+					{
+						Expr: &query.MultiPartIdent{Name: &query.Ident{Name: "c1", NamePos: pos(33), Tok: query.IDENT}},
+					},
+				},
+				Source: &query.QualifiedTableName{
+					Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(41), Name: "tbl2", Tok: query.IDENT}},
+				},
+			},
+		})
 		/*
 				AssertParseStatement(t, `WITH cte (foo) AS (SELECT bar) INSERT INTO tbl VALUES (1)`, &query.InsertStatement{
 					WithClause: &query.WithClause{
