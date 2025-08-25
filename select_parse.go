@@ -283,6 +283,14 @@ func (p *Parser) parseResultColumn() (_ *ResultColumn, err error) {
 		return &col, nil
 	}
 
+	if p.peek() == WITHIN {
+		within, err := p.parseWithinClause()
+		if err != nil {
+			return &col, err
+		}
+		col.Within = within
+	}
+
 	// If "AS" is next, the alias must follow.
 	// Otherwise it can optionally be an IDENT alias.
 	if p.peek() == AS {
@@ -298,18 +306,69 @@ func (p *Parser) parseResultColumn() (_ *ResultColumn, err error) {
 	return &col, nil
 }
 
+func (p *Parser) parseWithinClause() (*Within, error) {
+	var within Within
+
+	within.Within, _, _ = p.scan()
+	if p.peek() != GROUP {
+		return &within, p.errorExpected(p.pos, p.tok, "WITHIN GROUP")
+	}
+	within.Group, _, _ = p.scan()
+
+	if p.peek() != LP {
+		return &within, p.errorExpected(p.pos, p.tok, "( in ordering term")
+	}
+	within.GroupLparen, _, _ = p.scan()
+
+	if p.peek() != ORDER {
+		return &within, p.errorExpected(p.pos, p.tok, "Order in Within Group")
+	}
+	within.GroupOrder, _, _ = p.scan()
+
+	if p.peek() != BY {
+		return &within, p.errorExpected(p.pos, p.tok, "BY")
+	}
+	within.GroupOrderBy, _, _ = p.scan()
+
+	term, err := p.parseOrderingTerm()
+	if err != nil {
+		return &within, err
+	}
+	within.OrderingTerm = term
+
+	if p.peek() == LIMIT {
+		within.GroupLimit, _, _ = p.scan()
+		if within.GroupLimitExpr, err = p.ParseExpr(); err != nil {
+			return &within, err
+		}
+	}
+
+	// Parse final rparen.
+	if p.peek() != RP {
+		return &within, p.errorExpected(p.pos, p.tok, "right paren")
+	}
+	within.GroupRparen, _, _ = p.scan()
+
+	if p.peek() == LSB {
+		p.scan()
+
+		pos, tok, lit := p.scan()
+		if tok == INTEGER || tok == FLOAT {
+			within.Index = &NumberLit{ValuePos: pos, Value: lit}
+		} else {
+			return &within, p.errorExpected(p.pos, p.tok, "expected numeric index")
+		}
+		p.scan()
+	}
+
+	return &within, nil
+}
+
 func (p *Parser) parseOrderingTerm() (_ *OrderingTerm, err error) {
 	var term OrderingTerm
 	if term.X, err = p.ParseExpr(); err != nil {
 		return &term, err
 	}
-
-	//// Parse optional "COLLATE"
-	//if p.peek() == COLLATE {
-	//	if term.Collation, err = p.parseCollationClause(); err != nil {
-	//		return &term, err
-	//	}
-	//}
 
 	// Parse optional sort direction ("ASC" or "DESC")
 	switch p.peek() {

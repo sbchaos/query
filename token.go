@@ -53,6 +53,8 @@ const (
 	SEMI   // ;
 	LP     // (
 	RP     // )
+	LSB    // [
+	RSB    // ]
 	COMMA  // ,
 	NE     // !=
 	EQ     // =
@@ -173,6 +175,7 @@ const (
 	WHERE
 	WINDOW
 	WITH
+	WITHIN
 	keyword_end
 
 	token_end
@@ -198,6 +201,8 @@ var tokens = [...]string{
 	SEMI:   ";",
 	LP:     "(",
 	RP:     ")",
+	LSB:    "[",
+	RSB:    "]",
 	COMMA:  ",",
 	NE:     "!=",
 	EQ:     "=",
@@ -313,6 +318,7 @@ var tokens = [...]string{
 	WHERE:             "WHERE",
 	WINDOW:            "WINDOW",
 	WITH:              "WITH",
+	WITHIN:            "WITHIN",
 }
 
 // A list of keywords that can be used as unquoted identifiers.

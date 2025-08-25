@@ -243,6 +243,36 @@ func (cte *CTE) String() string {
 	return buf.String()
 }
 
+type Within struct {
+	Within         Pos           `json:"within"`
+	Group          Pos           `json:"group"`
+	GroupLparen    Pos           `json:"group_lparen"`
+	GroupOrder     Pos           `json:"group_order"`
+	GroupOrderBy   Pos           `json:"group_order_by"`
+	OrderingTerm   *OrderingTerm `json:"ordering_term"`
+	GroupLimit     Pos           `json:"group_limit"`
+	GroupLimitExpr Expr          `json:"group_limit_expr"`
+	GroupRparen    Pos           `json:"group_rparen"`
+	Index          *NumberLit    `json:"index"`
+}
+
+func (wi *Within) String() string {
+	var buf bytes.Buffer
+	buf.WriteString("WITHIN GROUP ")
+	buf.WriteRune('(')
+	buf.WriteString("ORDER BY ")
+	buf.WriteString(wi.OrderingTerm.String())
+	if wi.GroupLimit.IsValid() {
+		buf.WriteString(" LIMIT ")
+		buf.WriteString(wi.GroupLimit.String())
+	}
+	buf.WriteString(")")
+	if wi.Index != nil {
+		buf.WriteString(" [" + wi.Index.String() + "]")
+	}
+	return buf.String()
+}
+
 type ResultColumn struct {
 	Star  Pos    `json:"star"`
 	Expr  Expr   `json:"expr"`
@@ -251,6 +281,8 @@ type ResultColumn struct {
 
 	Except    Pos  `json:"except"`
 	ExceptCol Expr `json:"except_col"`
+
+	Within *Within `json:"within"`
 }
 
 // String returns the string representation of the column.
@@ -268,6 +300,11 @@ func (c *ResultColumn) String() string {
 	if c.Except.IsValid() {
 		return exp + " EXCEPT " + c.ExceptCol.String()
 	}
+
+	if c.Within != nil {
+		return exp + " " + c.Within.String()
+	}
+
 	return exp
 }
 

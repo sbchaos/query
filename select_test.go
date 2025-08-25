@@ -1097,6 +1097,81 @@ func TestParser_ParseStatement(t *testing.T) {
 				},
 			},
 		})
+		AssertParseStatement(t, `SELECT array_agg(STRUCT(*)) WITHIN GROUP (ORDER BY a1 DESC limit 1)[0] AS col1 FROM tbl1`, &query.SelectStatement{
+			Select: pos(0),
+			From:   pos(79),
+			Columns: []*query.ResultColumn{{
+				Expr: &query.Call{
+					Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(7), Name: "array_agg", Tok: query.IDENT}},
+					Lparen: pos(16),
+					Rparen: pos(26),
+					Args: []query.Expr{
+						&query.Call{
+							Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(17), Name: "STRUCT", Tok: query.IDENT}},
+							Lparen: pos(23),
+							Rparen: pos(25),
+							Star:   pos(24),
+						},
+					},
+				},
+				As:    pos(71),
+				Alias: &query.Ident{Name: "col1", NamePos: pos(74), Tok: query.IDENT},
+				Within: &query.Within{
+					Within:       pos(28),
+					Group:        pos(35),
+					GroupLparen:  pos(41),
+					GroupRparen:  pos(66),
+					GroupOrder:   pos(42),
+					GroupOrderBy: pos(48),
+					OrderingTerm: &query.OrderingTerm{
+						X:    &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(51), Name: "a1", Tok: query.IDENT}},
+						Desc: pos(54),
+					},
+					GroupLimit:     pos(59),
+					GroupLimitExpr: &query.NumberLit{ValuePos: pos(65), Value: "1"},
+					Index:          &query.NumberLit{ValuePos: pos(68), Value: "0"},
+				},
+			}},
+			Source: &query.QualifiedTableName{
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(84), Name: "tbl1", Tok: query.IDENT}},
+			},
+		})
+		AssertParseStatement(t, `SELECT a1, STRING_AGG(DISTINCT a2, ",") WITHIN GROUP (ORDER BY a2 asc) col1 FROM tbl1`, &query.SelectStatement{
+			Select: pos(0),
+			Columns: []*query.ResultColumn{
+				{
+					Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(7), Name: "a1", Tok: query.IDENT}},
+				},
+				{
+					Expr: &query.Call{
+						Name:     &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(11), Name: "STRING_AGG", Tok: query.IDENT}},
+						Lparen:   pos(21),
+						Rparen:   pos(38),
+						Distinct: pos(22),
+						Args: []query.Expr{
+							&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(31), Name: "a2", Tok: query.IDENT}},
+							&query.MultiPartIdent{Name: &query.Ident{NamePos: pos(35), Name: ",", Tok: query.QIDENT}},
+						},
+					},
+					Alias: &query.Ident{Name: "col1", NamePos: pos(71), Tok: query.IDENT},
+					Within: &query.Within{
+						Within:       pos(40),
+						Group:        pos(47),
+						GroupLparen:  pos(53),
+						GroupRparen:  pos(69),
+						GroupOrder:   pos(54),
+						GroupOrderBy: pos(60),
+						OrderingTerm: &query.OrderingTerm{
+							X:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(63), Name: "a2", Tok: query.IDENT}},
+							Asc: pos(66),
+						},
+					},
+				}},
+			From: pos(76),
+			Source: &query.QualifiedTableName{
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(81), Name: "tbl1", Tok: query.IDENT}},
+			},
+		})
 		AssertParseStatement(t, `SELECT * EXCEPT (col1, col2), bcd FROM tbl1`, &query.SelectStatement{
 			Select: pos(0),
 			Columns: []*query.ResultColumn{{
