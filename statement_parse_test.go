@@ -1249,4 +1249,39 @@ WHEN NOT MATCHED THEN INSERT (id, place) VALUES (src.id, src.place);`, &query.Me
 			},
 		})
 	})
+
+	t.Run("FUNCTION", func(t *testing.T) {
+		AssertParseStatement(t, `FUNCTION max_val (@numb BIGINT ) AS IF((@numb <= 50), true, false);`, &query.FunctionStatement{
+			Function: pos(0),
+			Name:     &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(9), Name: "max_val", Tok: query.IDENT}},
+			Lparen:   pos(17),
+			Rparen:   pos(31),
+			Params: []*query.ColumnDefinition{
+				{
+					Name: &query.Ident{NamePos: pos(18), Name: "@numb", Tok: query.BIND},
+					Type: &query.Type{Name: &query.Ident{NamePos: pos(24), Name: "BIGINT", Tok: query.IDENT}},
+				},
+			},
+			As: pos(33),
+			FnExpr: &query.Call{
+				Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(36), Name: "IF", Tok: query.IF}},
+				Lparen: pos(38),
+				Rparen: pos(65),
+				Args: []query.Expr{
+					&query.ParenExpr{
+						Lparen: pos(39),
+						Rparen: pos(51),
+						X: &query.BinaryExpr{
+							X:     &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(40), Name: "@numb", Tok: query.BIND}},
+							OpPos: pos(46),
+							Op:    query.LE,
+							Y:     &query.NumberLit{ValuePos: pos(49), Value: "50"},
+						},
+					},
+					&query.BoolLit{ValuePos: pos(54), Value: true},
+					&query.BoolLit{ValuePos: pos(60), Value: false},
+				},
+			},
+		})
+	})
 }

@@ -52,6 +52,8 @@ func (p *Parser) parseNonExplainStatement() (Statement, error) {
 		return p.parseDeclarationStatement()
 	case SET:
 		return p.parseSetStatement()
+	case FUNCTION:
+		return p.parseFunctionStatement()
 	case MERGE:
 		return p.parseMergeStatement()
 	case CREATE:
@@ -774,4 +776,60 @@ func (p *Parser) parseMatchedCondition() (*MatchedCondition, error) {
 	}
 
 	return &stmt, p.errorExpected(p.pos, p.tok, "DELETE, UPDATE, INSERT or VALUES")
+}
+
+func (p *Parser) parseFunctionStatement() (*FunctionStatement, error) {
+	assert(p.peek() == FUNCTION)
+	var stmt FunctionStatement
+	var err error
+
+	stmt.Function, _, _ = p.scan()
+
+	stmt.Name, err = p.parseMultiPartIdent()
+	if err != nil {
+		return &stmt, err
+	}
+
+	if p.peek() != LP {
+		return &stmt, p.errorExpected(p.pos, p.tok, "LP")
+	}
+	stmt.Lparen, _, _ = p.scan()
+
+	if stmt.Params, err = p.parseColumnDefinitions(); err != nil {
+		return &stmt, err
+	}
+
+	if p.peek() != RP {
+		return &stmt, p.errorExpected(p.pos, p.tok, "RP")
+	}
+	stmt.Rparen, _, _ = p.scan()
+
+	if p.peek() == RETURNS {
+		stmt.Returns, _, _ = p.scan()
+		stmt.ReturnParam, err = p.parseColumnDefinition()
+		if err != nil {
+			return &stmt, err
+		}
+	}
+
+	if p.peek() != AS {
+		return &stmt, p.errorExpected(p.pos, p.tok, "AS")
+	}
+	stmt.As, _, _ = p.scan()
+
+	if p.peek() == BEGIN {
+		stmt.Begin, _, _ = p.scan()
+	}
+
+	expr, err := p.ParseExpr()
+	if err != nil {
+		return &stmt, err
+	}
+	stmt.FnExpr = expr
+
+	if p.peek() == END {
+		stmt.End, _, _ = p.scan()
+	}
+
+	return &stmt, nil
 }

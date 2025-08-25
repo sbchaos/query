@@ -84,6 +84,7 @@ const (
 	AND
 	AS
 	ASC
+	BEGIN
 	BETWEEN
 	BY
 	CASE
@@ -154,6 +155,7 @@ const (
 	RECURSIVE
 	REGEXP
 	REPLACE
+	RETURNS
 	RETURNING
 	ROWID
 	SELECT
@@ -222,6 +224,7 @@ var tokens = [...]string{
 	AND:               "AND",
 	AS:                "AS",
 	ASC:               "ASC",
+	BEGIN:             "BEGIN",
 	BETWEEN:           "BETWEEN",
 	BY:                "BY",
 	CASE:              "CASE",
@@ -292,6 +295,7 @@ var tokens = [...]string{
 	RECURSIVE:         "RECURSIVE",
 	REGEXP:            "REGEXP",
 	REPLACE:           "REPLACE",
+	RETURNS:           "RETURNS",
 	RETURNING:         "RETURNING",
 	ROWID:             "ROWID",
 	SELECT:            "SELECT",

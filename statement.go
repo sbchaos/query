@@ -12,6 +12,7 @@ func (*SetStatement) node()         {}
 func (*CreateTableStatement) node() {}
 func (*DropTableStatement) node()   {}
 func (*MergeStatement) node()       {}
+func (*FunctionStatement) node()    {}
 
 type Statement interface {
 	Node
@@ -25,6 +26,7 @@ func (*SetStatement) stmt()         {}
 func (*CreateTableStatement) stmt() {}
 func (*DropTableStatement) stmt()   {}
 func (*MergeStatement) stmt()       {}
+func (*FunctionStatement) stmt()    {}
 
 type SetStatement struct {
 	Set   Pos    `json:"set"`
@@ -458,6 +460,20 @@ func (s *MergeStatement) String() string {
 }
 
 type FunctionStatement struct {
+	Function Pos             `json:"function"`
+	Name     *MultiPartIdent `json:"name"`
+
+	Lparen Pos                 `json:"lparen"`
+	Params []*ColumnDefinition `json:"params"`
+	Rparen Pos                 `json:"rparen"`
+
+	Returns     Pos               `json:"returns"`
+	ReturnParam *ColumnDefinition `json:"return_param"`
+
+	As     Pos  `json:"as"`
+	Begin  Pos  `json:"begin"`
+	FnExpr Expr `json:"fn_expr"`
+	End    Pos  `json:"end"`
 }
 
 func (s *FunctionStatement) String() string {
