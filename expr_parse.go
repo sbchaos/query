@@ -336,6 +336,9 @@ func (p *Parser) parseBinaryExpr(prec1 int) (expr Expr, err error) {
 			if err != nil {
 				return nil, err
 			}
+			if p.peek() != LP {
+				return nil, p.errorExpected(p.pos, p.tok, "call in Index")
+			}
 			c1, err = p.parseCall(ident)
 			if err != nil {
 				return nil, err
