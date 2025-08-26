@@ -332,9 +332,9 @@ var tokens = [...]string{
 // A list of keywords that can be used as unquoted identifiers.
 var bareTokens = [...]Token{
 	ASC, BY, CAST, CONFLICT, CROSS, CURRENT_DATE, CURRENT_TIME,
-	CURRENT_TIMESTAMP, DESC, DO, END, FIRST, FULL, GLOB, IF, INNER, INTEGER,
+	CURRENT_TIMESTAMP, DATE, DESC, DO, END, FIRST, FULL, GLOB, IF, INNER, INTEGER,
 	LAST, LEFT, LIKE, MATCH, NATURAL, NULLS, OFFSET, OUTER, OVER,
-	PARTITION, RECURSIVE, REGEXP, REPLACE, VIEW, WINDOW, WITH,
+	PARTITION, RECURSIVE, REGEXP, REPLACE, TIMESTAMP, VIEW, WINDOW, WITH,
 }
 
 func (t Token) String() string {
@@ -375,6 +375,10 @@ func (t Token) IsBinaryOp() bool {
 	default:
 		return false
 	}
+}
+
+func isAllowedIdent(tok Token) bool {
+	return isIdentToken(tok) || isBareToken(tok)
 }
 
 func isIdentToken(tok Token) bool {

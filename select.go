@@ -29,10 +29,8 @@ type SelectStatement struct {
 	From   Pos    `json:"from"`
 	Source Source `json:"source"`
 
-	Where          Pos  `json:"where"`
-	WhereNot       Pos  `json:"not"`
-	WhereNotExists Pos  `json:"exists"`
-	WhereExpr      Expr `json:"where_expr"`
+	Where     Pos  `json:"where"`
+	WhereExpr Expr `json:"where_expr"`
 
 	Group        Pos    `json:"group"`
 	GroupBy      Pos    `json:"group_by"`

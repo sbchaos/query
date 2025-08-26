@@ -89,29 +89,8 @@ func (p *Parser) parseSelectStatement(compounded bool, withClause *WithClause) (
 		if p.peek() == WHERE {
 			stmt.Where, _, _ = p.scan()
 
-			if p.peek() == NOT {
-				stmt.WhereNot, _, _ = p.scan()
-
-				if p.peek() != EXISTS {
-					return &stmt, p.errorExpected(p.pos, p.tok, "exists in WHERE NOT EXISTS")
-				}
-				stmt.WhereNotExists, _, _ = p.scan()
-
-				if p.peek() == LP {
-					p.scan()
-				}
-
-				stmt.Compound, err = p.parseSelectStatement(true, nil)
-				if err != nil {
-					return &stmt, err
-				}
-				if p.peek() == RP {
-					p.scan()
-				}
-			} else {
-				if stmt.WhereExpr, err = p.ParseExpr(); err != nil {
-					return &stmt, err
-				}
+			if stmt.WhereExpr, err = p.ParseExpr(); err != nil {
+				return &stmt, err
 			}
 		}
 
@@ -495,7 +474,7 @@ func (p *Parser) parseUnarySource() (source Source, err error) {
 	case LP:
 		return p.parseParenSource()
 	case IDENT, QIDENT, TSTRING, BIND, TMPL:
-		return p.parseQualifiedTable(true, true)
+		return p.parseQualifiedTable(true)
 	case VALUES:
 		return p.parseSelectStatement(false, nil)
 	default:
@@ -638,7 +617,7 @@ func (p *Parser) parseParenSource() (_ *ParenSource, err error) {
 	return &source, nil
 }
 
-func (p *Parser) parseQualifiedTable(aliasOK, indexedOK bool) (_ Source, err error) {
+func (p *Parser) parseQualifiedTable(aliasOK bool) (_ Source, err error) {
 	if !isIdentToken(p.peek()) {
 		return nil, p.errorExpected(p.pos, p.tok, "table name")
 	}

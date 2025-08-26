@@ -361,7 +361,6 @@ func TestParser_ParseExpr(t *testing.T) {
 				Rparen: pos(14),
 			},
 		})
-		AssertParseExprError(t, `1 IN 2`, `1:6: expected left paren, found 2`)
 		AssertParseExprError(t, `1 IN (`, `1:6: expected expression, found 'EOF'`)
 		AssertParseExprError(t, `1 IN (2 3`, `1:9: expected comma or right paren, found 3`)
 		AssertParseExpr(t, `1 BETWEEN 2 AND 3'`, &query.BinaryExpr{

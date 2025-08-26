@@ -1082,29 +1082,33 @@ func TestParser_ParseStatement(t *testing.T) {
 				Name:  &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "users", Tok: query.IDENT}},
 				Alias: &query.Ident{NamePos: pos(20), Name: "u", Tok: query.IDENT},
 			},
-			Where:          pos(22),
-			WhereNot:       pos(28),
-			WhereNotExists: pos(32),
-			Compound: &query.SelectStatement{
-				Select:  pos(40),
-				Columns: []*query.ResultColumn{{Star: pos(47)}},
-				From:    pos(49),
-				Source: &query.QualifiedTableName{
-					Name:  &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(54), Name: "orders", Tok: query.IDENT}},
-					Alias: &query.Ident{NamePos: pos(61), Name: "o", Tok: query.IDENT},
-				},
-				Where: pos(63),
-				WhereExpr: &query.BinaryExpr{
-					X: &query.MultiPartIdent{
-						First: &query.Ident{NamePos: pos(69), Name: "o", Tok: query.IDENT},
-						Dot1:  pos(70),
-						Name:  &query.Ident{NamePos: pos(71), Name: "user_id", Tok: query.IDENT}},
-					Op:    query.EQ,
-					OpPos: pos(79),
-					Y: &query.MultiPartIdent{
-						First: &query.Ident{NamePos: pos(81), Name: "u", Tok: query.IDENT},
-						Dot1:  pos(82),
-						Name:  &query.Ident{NamePos: pos(83), Name: "user_id", Tok: query.IDENT},
+			Where: pos(22),
+			WhereExpr: &query.Exists{
+				Not:    pos(28),
+				Exists: pos(32),
+				Lparen: pos(39),
+				Rparen: pos(90),
+				Select: &query.SelectStatement{
+					Select:  pos(40),
+					Columns: []*query.ResultColumn{{Star: pos(47)}},
+					From:    pos(49),
+					Source: &query.QualifiedTableName{
+						Name:  &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(54), Name: "orders", Tok: query.IDENT}},
+						Alias: &query.Ident{NamePos: pos(61), Name: "o", Tok: query.IDENT},
+					},
+					Where: pos(63),
+					WhereExpr: &query.BinaryExpr{
+						X: &query.MultiPartIdent{
+							First: &query.Ident{NamePos: pos(69), Name: "o", Tok: query.IDENT},
+							Dot1:  pos(70),
+							Name:  &query.Ident{NamePos: pos(71), Name: "user_id", Tok: query.IDENT}},
+						Op:    query.EQ,
+						OpPos: pos(79),
+						Y: &query.MultiPartIdent{
+							First: &query.Ident{NamePos: pos(81), Name: "u", Tok: query.IDENT},
+							Dot1:  pos(82),
+							Name:  &query.Ident{NamePos: pos(83), Name: "user_id", Tok: query.IDENT},
+						},
 					},
 				},
 			},

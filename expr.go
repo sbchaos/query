@@ -22,6 +22,7 @@ func (*CaseExpr) node()       {}
 func (*CastExpr) node()       {}
 func (*Null) node()           {}
 func (*ExprList) node()       {}
+func (*Exists) node()         {}
 func (*Ident) node()          {}
 func (*MultiPartIdent) node() {}
 func (*ParenExpr) node()      {}
@@ -38,6 +39,7 @@ func (*CastExpr) expr()       {}
 func (*CaseExpr) expr()       {}
 func (*Null) expr()           {}
 func (*ExprList) expr()       {}
+func (*Exists) expr()         {}
 func (*Ident) expr()          {}
 func (*MultiPartIdent) expr() {}
 func (*ParenExpr) expr()      {}
@@ -440,4 +442,20 @@ func (expr *IndexExpr) String() string {
 		return expr.X.String() + "[" + expr.Call.String() + "]"
 	}
 	return expr.X.String() + "[" + expr.Index.String() + "]"
+}
+
+type Exists struct {
+	Not    Pos              // position of optional NOT keyword
+	Exists Pos              // position of EXISTS keyword
+	Lparen Pos              // position of left paren
+	Select *SelectStatement // select statement
+	Rparen Pos              // position of right paren
+}
+
+// String returns the string representation of the expression.
+func (expr *Exists) String() string {
+	if expr.Not.IsValid() {
+		return fmt.Sprintf("NOT EXISTS (%s)", expr.Select.String())
+	}
+	return fmt.Sprintf("EXISTS (%s)", expr.Select.String())
 }

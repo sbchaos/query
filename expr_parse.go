@@ -74,9 +74,6 @@ func (p *Parser) parseIdent(desc string) (*Ident, error) {
 	switch tok {
 	case IDENT, QIDENT, TSTRING, BIND, TMPL:
 		return &Ident{Name: lit, NamePos: pos, Tok: tok}, nil
-	// Special Cases
-	case DATE, TIMESTAMP:
-		return &Ident{Name: lit, NamePos: pos, Tok: tok}, nil
 	case NULL:
 		return &Ident{Name: lit, NamePos: pos}, nil
 	default:
@@ -184,11 +181,17 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 		p.unscan()
 		return p.parseCastExpr()
 	case tok == NOT:
+		if p.peek() == EXISTS {
+			return p.parseExists(pos)
+		}
 		expr, err = p.parseOperand()
 		if err != nil {
 			return nil, err
 		}
 		return &UnaryExpr{OpPos: pos, Op: tok, X: expr}, nil
+	case tok == EXISTS:
+		p.unscan()
+		return p.parseExists(Pos{})
 	case tok == SELECT, tok == WITH:
 		p.unscan()
 		selectStmt, err := p.parseSelectStatement(false, nil)
@@ -247,7 +250,7 @@ func (p *Parser) parseMultiIdent(ident *Ident) (*MultiPartIdent, Pos) {
 		}, emptyPos
 	}
 	dot1, _, _ := p.scan()
-	if !isIdentToken(p.peek()) {
+	if !isAllowedIdent(p.peek()) {
 		return &MultiPartIdent{Name: ident}, dot1
 	}
 	// Next ident
@@ -259,7 +262,7 @@ func (p *Parser) parseMultiIdent(ident *Ident) (*MultiPartIdent, Pos) {
 	}
 
 	dot2, _, _ := p.scan()
-	if !isIdentToken(p.peek()) {
+	if !isAllowedIdent(p.peek()) {
 		return &MultiPartIdent{First: ident, Dot1: dot1, Name: ident2}, dot2
 	}
 
@@ -272,7 +275,7 @@ func (p *Parser) parseMultiIdent(ident *Ident) (*MultiPartIdent, Pos) {
 	}
 
 	dot3, _, _ := p.scan()
-	if !isIdentToken(p.peek()) {
+	if !isAllowedIdent(p.peek()) {
 		return &MultiPartIdent{First: ident, Dot1: dot1, Second: ident2, Dot2: dot2, Name: ident3}, dot3
 	}
 
@@ -362,10 +365,17 @@ func (p *Parser) parseBinaryExpr(prec1 int) (expr Expr, err error) {
 		case NOTNULL, ISNULL:
 			x = &Null{X: x, OpPos: pos, Op: op}
 		case IN, NOTIN:
-
-			y, err := p.parseExprList()
-			if err != nil {
-				return x, err
+			var y Expr
+			if p.peek() == LP {
+				y, err = p.parseExprList()
+				if err != nil {
+					return x, err
+				}
+			} else {
+				y, err = p.ParseExpr()
+				if err != nil {
+					return x, err
+				}
 			}
 			x = &BinaryExpr{X: x, OpPos: pos, Op: op, Y: y}
 
@@ -552,6 +562,34 @@ func (p *Parser) parseCaseExpr() (_ *CaseExpr, err error) {
 		return &expr, p.errorExpected(p.pos, p.tok, "END")
 	}
 	expr.End, _, _ = p.scan()
+
+	return &expr, nil
+}
+
+func (p *Parser) parseExists(notPos Pos) (_ *Exists, err error) {
+	assert(p.peek() == EXISTS)
+
+	var expr Exists
+	expr.Not = notPos
+
+	if p.peek() != EXISTS {
+		return &expr, p.errorExpected(p.pos, p.tok, "EXISTS")
+	}
+	expr.Exists, _, _ = p.scan()
+
+	if p.peek() != LP {
+		return &expr, p.errorExpected(p.pos, p.tok, "left paren")
+	}
+	expr.Lparen, _, _ = p.scan()
+
+	if expr.Select, err = p.parseSelectStatement(false, nil); err != nil {
+		return &expr, err
+	}
+
+	if p.peek() != RP {
+		return &expr, p.errorExpected(p.pos, p.tok, "right paren")
+	}
+	expr.Rparen, _, _ = p.scan()
 
 	return &expr, nil
 }
