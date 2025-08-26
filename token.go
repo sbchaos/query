@@ -332,7 +332,7 @@ var tokens = [...]string{
 // A list of keywords that can be used as unquoted identifiers.
 var bareTokens = [...]Token{
 	ASC, BY, CAST, CONFLICT, CROSS, CURRENT_DATE, CURRENT_TIME,
-	CURRENT_TIMESTAMP, DESC, DO, END, FIRST, FULL, GLOB, IF, INNER,
+	CURRENT_TIMESTAMP, DESC, DO, END, FIRST, FULL, GLOB, IF, INNER, INTEGER,
 	LAST, LEFT, LIKE, MATCH, NATURAL, NULLS, OFFSET, OUTER, OVER,
 	PARTITION, RECURSIVE, REGEXP, REPLACE, VIEW, WINDOW, WITH,
 }
@@ -402,9 +402,12 @@ func isExprIdentToken(tok Token) bool {
 	}
 }
 
-func isTypeToken(tok Token) bool {
-	switch tok {
-	case IDENT, NULL, DATE, TIMESTAMP:
+func isTypeToken(lit string) bool {
+	l1 := strings.ToUpper(lit)
+	switch l1 {
+	case "BIGINT", "BINARY", "BOOLEAN", "CHARACTER", "CLOB", "DATE", "DATETIME",
+		"DECIMAL", "DOUBLE", "FLOAT", "INT", "INT64", "INTEGER", "NCHAR", "NULL", "UUID",
+		"NUMERIC", "NVARCHAR", "REAL", "SMALLINT", "STRING", "TEXT", "TINYINT", "TIMESTAMP", "TIMESTAMP_NTZ", "VARCHAR":
 		return true
 	default:
 		return false

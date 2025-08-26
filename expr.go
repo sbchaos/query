@@ -431,9 +431,13 @@ type IndexExpr struct {
 	X      Expr       `json:"x"`
 	LBrack Pos        `json:"lbrack"`
 	Index  *NumberLit `json:"index"`
+	Call   *Call      `json:"call"`
 	RBrack Pos        `json:"rbrack"`
 }
 
 func (expr *IndexExpr) String() string {
+	if expr.Call != nil {
+		return expr.X.String() + "[" + expr.Call.String() + "]"
+	}
 	return expr.X.String() + "[" + expr.Index.String() + "]"
 }

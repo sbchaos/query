@@ -103,19 +103,13 @@ func (p *Parser) parseMultiPartIdent() (*MultiPartIdent, error) {
 func (p *Parser) parseType() (_ *Type, err error) {
 	var typ Type
 	for {
-		tok := p.peek()
-		if !isTypeToken(tok) {
+		p1, _, l1 := p.peekScan()
+		if !isTypeToken(l1) {
 			break
 		}
-		typeName, err := p.parseIdent("type name")
-		if err != nil {
-			return &typ, err
-		}
-		if typ.Name == nil {
-			typ.Name = typeName
-		} else {
-			typ.Name.Name += " " + typeName.Name
-		}
+
+		p.scan()
+		typ.Name = &Ident{Name: l1, NamePos: p1}
 	}
 
 	if typ.Name == nil {
@@ -328,10 +322,21 @@ func (p *Parser) parseBinaryExpr(prec1 int) (expr Expr, err error) {
 	}
 	if p.peek() == LSB {
 		p0, _, _ := p.scan()
-		var idx NumberLit
+
+		var idx *NumberLit
+		var c1 *Call
 		if p.peek() == INTEGER || p.peek() == FLOAT {
 			p1, _, l1 := p.scan()
-			idx = NumberLit{ValuePos: p1, Value: l1}
+			idx = &NumberLit{ValuePos: p1, Value: l1}
+		} else if isExprIdentToken(p.peek()) {
+			ident, err := p.parseMultiPartIdent()
+			if err != nil {
+				return nil, err
+			}
+			c1, err = p.parseCall(ident)
+			if err != nil {
+				return nil, err
+			}
 		} else {
 			return nil, p.errorExpected(p.pos, p.tok, "number")
 		}
@@ -340,7 +345,7 @@ func (p *Parser) parseBinaryExpr(prec1 int) (expr Expr, err error) {
 		}
 		p2, _, _ := p.scan()
 
-		x = &IndexExpr{X: x, LBrack: p0, Index: &idx, RBrack: p2}
+		x = &IndexExpr{X: x, LBrack: p0, Index: idx, Call: c1, RBrack: p2}
 	}
 
 	for {

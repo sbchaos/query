@@ -280,6 +280,7 @@ type ResultColumn struct {
 	Expr  Expr   `json:"expr"`
 	As    Pos    `json:"as"`
 	Alias *Ident `json:"alias"`
+	Type  *Type  `json:"type"`
 
 	Except    Pos  `json:"except"`
 	ExceptCol Expr `json:"except_col"`

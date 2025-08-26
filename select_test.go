@@ -663,7 +663,7 @@ func TestParser_ParseStatement(t *testing.T) {
 						X:      &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(60), Name: "dstart", Tok: query.IDENT}},
 						As:     pos(67),
 						Type: &query.Type{
-							Name: &query.Ident{NamePos: pos(70), Name: "TIMESTAMP", Tok: query.TIMESTAMP},
+							Name: &query.Ident{NamePos: pos(70), Name: "TIMESTAMP"},
 						},
 					},
 				},
@@ -733,6 +733,50 @@ func TestParser_ParseStatement(t *testing.T) {
 						},
 					},
 				},
+			},
+		})
+		AssertParseStatement(t, `SELECT SPLIT(a.link.url, "/")[SAFE_OFFSET(3)] FROM a`, &query.SelectStatement{
+			Select: pos(0),
+			Columns: []*query.ResultColumn{{
+				Expr: &query.IndexExpr{
+					X: &query.Call{
+						Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(7), Name: "SPLIT", Tok: query.IDENT}},
+						Lparen: pos(12),
+						Rparen: pos(28),
+						Args: []*query.Params{
+							{
+								X: &query.MultiPartIdent{
+									First:  &query.Ident{NamePos: pos(13), Name: "a", Tok: query.IDENT},
+									Dot1:   pos(14),
+									Second: &query.Ident{NamePos: pos(15), Name: "link", Tok: query.IDENT},
+									Dot2:   pos(19),
+									Name:   &query.Ident{NamePos: pos(20), Name: "url", Tok: query.IDENT},
+								},
+							},
+							{
+								X: &query.MultiPartIdent{
+									Name: &query.Ident{NamePos: pos(25), Name: "/", Tok: query.QIDENT},
+								},
+							},
+						},
+					},
+					LBrack: pos(29),
+					RBrack: pos(44),
+					Call: &query.Call{
+						Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(30), Name: "SAFE_OFFSET", Tok: query.IDENT}},
+						Lparen: pos(41),
+						Rparen: pos(43),
+						Args: []*query.Params{
+							{
+								X: &query.NumberLit{ValuePos: pos(42), Value: "3"},
+							},
+						},
+					},
+				},
+			}},
+			From: pos(46),
+			Source: &query.QualifiedTableName{
+				Name: &query.MultiPartIdent{Name: &query.Ident{Name: "a", NamePos: pos(51), Tok: query.IDENT}},
 			},
 		})
 		AssertParseStatement(t, `SELECT a  FROM tbl1 c1 LEFT OUTER JOIN tbl2 c2 ON c1.id = c2.id AND b < b1 LATERAL VIEW JSON_EXPLODE(JSON_PARSE(c1.json)) _T1 AS elem, raw_metadata`, &query.SelectStatement{
@@ -1105,7 +1149,7 @@ func TestParser_ParseStatement(t *testing.T) {
 										Rparen: pos(45),
 									},
 									As:     pos(47),
-									Type:   &query.Type{Name: &query.Ident{NamePos: pos(50), Name: "INT", Tok: query.IDENT}},
+									Type:   &query.Type{Name: &query.Ident{NamePos: pos(50), Name: "INT"}},
 									Lparen: pos(32),
 									Rparen: pos(53),
 								},
@@ -1246,6 +1290,36 @@ func TestParser_ParseStatement(t *testing.T) {
 				},
 			},
 		})
+		AssertParseStatement(t, `SELECT a as a1, DATETIME(event_timestamp) as TIMESTAMP FROM tbl1`, &query.SelectStatement{
+			Select: pos(0),
+			Columns: []*query.ResultColumn{
+				{
+					Expr:  &query.MultiPartIdent{Name: &query.Ident{Name: "a", NamePos: pos(7), Tok: query.IDENT}},
+					As:    pos(9),
+					Alias: &query.Ident{NamePos: pos(12), Name: "a1", Tok: query.IDENT},
+				},
+				{
+					Expr: &query.Call{
+						Name: &query.MultiPartIdent{Name: &query.Ident{Name: "DATETIME", NamePos: pos(16), Tok: query.IDENT}},
+						Args: []*query.Params{
+							{
+								X: &query.MultiPartIdent{Name: &query.Ident{Name: "event_timestamp", NamePos: pos(25), Tok: query.IDENT}},
+							},
+						},
+						Lparen: pos(24),
+						Rparen: pos(40),
+					},
+					As: pos(42),
+					Type: &query.Type{
+						Name: &query.Ident{NamePos: pos(45), Name: "TIMESTAMP"},
+					},
+				},
+			},
+			From: pos(55),
+			Source: &query.QualifiedTableName{
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(60), Name: "tbl1", Tok: query.IDENT}},
+			},
+		})
 		AssertParseStatement(t, `SELECT array_agg(STRUCT(*)) WITHIN GROUP (ORDER BY a1 DESC limit 1)[0] AS col1 FROM tbl1`, &query.SelectStatement{
 			Select: pos(0),
 			From:   pos(79),
@@ -1334,7 +1408,7 @@ func TestParser_ParseStatement(t *testing.T) {
 						X:  &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(23), Name: "a2", Tok: query.IDENT}},
 						As: pos(26),
 						Type: &query.Type{
-							Name: &query.Ident{NamePos: pos(29), Name: "STRING", Tok: query.IDENT},
+							Name: &query.Ident{NamePos: pos(29), Name: "STRING"},
 						},
 					}},
 				},
@@ -1426,6 +1500,7 @@ func TestParser_ParseStatement(t *testing.T) {
 			},
 		})
 		AssertParseStatement(t, `SELECT a, IF(GROUPING(b.c) = 1,'All',b.d) AS g1 FROM b`, &query.SelectStatement{
+			//
 			Select: pos(0),
 			Columns: []*query.ResultColumn{
 				{Expr: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(7), Name: "a", Tok: query.IDENT}}},

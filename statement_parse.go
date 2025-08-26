@@ -655,8 +655,8 @@ func (p *Parser) parseColumnDefinition() (_ *ColumnDefinition, err error) {
 		return &col, err
 	}
 
-	tok := p.peek()
-	if isTypeToken(tok) {
+	_, _, l1 := p.peekScan()
+	if isTypeToken(l1) {
 		if col.Type, err = p.parseType(); err != nil {
 			return &col, err
 		}

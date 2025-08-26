@@ -317,10 +317,19 @@ func (p *Parser) parseResultColumn() (_ *ResultColumn, err error) {
 	// Otherwise it can optionally be an IDENT alias.
 	if p.peek() == AS {
 		col.As, _, _ = p.scan()
-		if !isIdentToken(p.peek()) {
+		_, t1, l1 := p.peekScan()
+
+		if isTypeToken(l1) {
+			typ, err := p.parseType()
+			if err != nil {
+				return &col, err
+			}
+			col.Type = typ
+		} else if isIdentToken(t1) {
+			col.Alias, _ = p.parseIdent("column alias")
+		} else {
 			return &col, p.errorExpected(p.pos, p.tok, "column alias")
 		}
-		col.Alias, _ = p.parseIdent("column alias")
 	} else if isIdentToken(p.peek()) {
 		col.Alias, _ = p.parseIdent("column alias")
 	}

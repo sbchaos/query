@@ -854,13 +854,13 @@ func TestParser_ParseStatement2(t *testing.T) {
 				{
 					Name: &query.Ident{NamePos: pos(18), Name: "col1", Tok: query.IDENT},
 					Type: &query.Type{
-						Name: &query.Ident{NamePos: pos(23), Name: "TEXT", Tok: query.IDENT},
+						Name: &query.Ident{NamePos: pos(23), Name: "TEXT"},
 					},
 				},
 				{
 					Name: &query.Ident{NamePos: pos(29), Name: "col2", Tok: query.IDENT},
 					Type: &query.Type{
-						Name:      &query.Ident{NamePos: pos(34), Name: "DECIMAL", Tok: query.IDENT},
+						Name:      &query.Ident{NamePos: pos(34), Name: "DECIMAL"},
 						Lparen:    pos(41),
 						Precision: &query.NumberLit{ValuePos: pos(42), Value: "10"},
 						Scale:     &query.NumberLit{ValuePos: pos(45), Value: "5"},
@@ -924,13 +924,13 @@ func TestParser_ParseStatement2(t *testing.T) {
 				{
 					Name: &query.Ident{NamePos: query.Pos{Offset: 31, Line: 2, Column: 2}, Name: "col1", Tok: query.IDENT},
 					Type: &query.Type{
-						Name: &query.Ident{NamePos: query.Pos{Offset: 36, Line: 2, Column: 7}, Name: "TEXT", Tok: query.IDENT},
+						Name: &query.Ident{NamePos: query.Pos{Offset: 36, Line: 2, Column: 7}, Name: "TEXT"},
 					},
 				},
 				{
 					Name: &query.Ident{NamePos: query.Pos{Offset: 56, Line: 3, Column: 4}, Name: "col2", Tok: query.IDENT},
 					Type: &query.Type{
-						Name: &query.Ident{NamePos: query.Pos{Offset: 61, Line: 3, Column: 9}, Name: "TEXT", Tok: query.IDENT},
+						Name: &query.Ident{NamePos: query.Pos{Offset: 61, Line: 3, Column: 9}, Name: "TEXT"},
 					},
 				},
 			},
@@ -958,7 +958,7 @@ func TestParser_ParseStatement2(t *testing.T) {
 				{
 					Name: &query.Ident{NamePos: pos(32), Name: "col1", Tok: query.IDENT},
 					Type: &query.Type{
-						Name: &query.Ident{NamePos: pos(37), Name: "TEXT", Tok: query.IDENT},
+						Name: &query.Ident{NamePos: pos(37), Name: "TEXT"},
 					},
 				},
 			},
@@ -985,7 +985,6 @@ func TestParser_ParseStatement2(t *testing.T) {
 						Name: &query.Ident{
 							NamePos: pos(23),
 							Name:    "TEXT",
-							Tok:     query.IDENT,
 						},
 					},
 				},
@@ -999,7 +998,6 @@ func TestParser_ParseStatement2(t *testing.T) {
 						Name: &query.Ident{
 							NamePos: pos(32),
 							Name:    "DATETIME",
-							Tok:     query.IDENT,
 						},
 					},
 				},
@@ -1007,7 +1005,7 @@ func TestParser_ParseStatement2(t *testing.T) {
 			Rparen: pos(40),
 		})
 
-		AssertParseStatement(t, "CREATE TABLE t (c1 CHARACTER VARYING, c2 UUID, c3 TIMESTAMP)", &query.CreateTableStatement{
+		AssertParseStatement(t, "CREATE TABLE t (c1 VARCHAR, c2 UUID, c3 TIMESTAMP)", &query.CreateTableStatement{
 			Create: pos(0),
 			Table:  pos(7),
 			Name: &query.MultiPartIdent{Name: &query.Ident{
@@ -1026,43 +1024,39 @@ func TestParser_ParseStatement2(t *testing.T) {
 					Type: &query.Type{
 						Name: &query.Ident{
 							NamePos: pos(19),
-							Name:    "CHARACTER VARYING",
-							Tok:     query.IDENT,
+							Name:    "VARCHAR",
 						},
 					},
 				},
 				{
 					Name: &query.Ident{
-						NamePos: pos(38),
+						NamePos: pos(28),
 						Name:    "c2",
 						Tok:     query.IDENT,
 					},
 					Type: &query.Type{
 						Name: &query.Ident{
-							NamePos: pos(41),
+							NamePos: pos(31),
 							Name:    "UUID",
-							Tok:     query.IDENT,
 						},
 					},
 				},
 				{
 					Name: &query.Ident{
-						NamePos: pos(47),
+						NamePos: pos(37),
 						Name:    "c3",
 						Tok:     query.IDENT,
 					},
 					Type: &query.Type{
 						Name: &query.Ident{
-							NamePos: pos(50),
+							NamePos: pos(40),
 							Name:    "TIMESTAMP",
-							Tok:     query.TIMESTAMP,
 						},
 					},
 				},
 			},
-			Rparen: pos(59),
+			Rparen: pos(49),
 		})
-
 		AssertParseStatement(t, "CREATE TABLE t (c1 NULL)", &query.CreateTableStatement{
 			Create: pos(0),
 			Table:  pos(7),
@@ -1166,7 +1160,7 @@ func TestParser_ParseStatement2(t *testing.T) {
 						{
 							Name: &query.Ident{Name: "col1", NamePos: query.Pos{Offset: 36, Line: 3, Column: 3}, Tok: query.IDENT},
 							Type: &query.Type{
-								Name: &query.Ident{Name: "TEXT", NamePos: query.Pos{Offset: 41, Line: 3, Column: 8}, Tok: query.IDENT},
+								Name: &query.Ident{Name: "TEXT", NamePos: query.Pos{Offset: 41, Line: 3, Column: 8}},
 							},
 						},
 					},
@@ -1183,7 +1177,7 @@ func TestParser_ParseStatement2(t *testing.T) {
 						{
 							Name: &query.Ident{Name: "col1", Tok: query.IDENT, NamePos: query.Pos{Offset: 38, Line: 3, Column: 9}},
 							Type: &query.Type{
-								Name: &query.Ident{Name: "TEXT", Tok: query.IDENT, NamePos: query.Pos{Offset: 43, Line: 3, Column: 14}},
+								Name: &query.Ident{Name: "TEXT", NamePos: query.Pos{Offset: 43, Line: 3, Column: 14}},
 							},
 						},
 					},
@@ -1296,7 +1290,7 @@ WHEN NOT MATCHED THEN INSERT (id, place) VALUES (src.id, src.place);`, &query.Me
 			Params: []*query.ColumnDefinition{
 				{
 					Name: &query.Ident{NamePos: pos(18), Name: "@numb", Tok: query.BIND},
-					Type: &query.Type{Name: &query.Ident{NamePos: pos(24), Name: "BIGINT", Tok: query.IDENT}},
+					Type: &query.Type{Name: &query.Ident{NamePos: pos(24), Name: "BIGINT"}},
 				},
 			},
 			As: pos(33),
