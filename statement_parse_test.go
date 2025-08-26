@@ -27,6 +27,18 @@ func TestParser_ParseStatement2(t *testing.T) {
 			Equal: pos(43),
 			Value: "true",
 		})
+		AssertParseStatement(t, `set odps.sql.type.system.odps2=true;`, &query.SetStatement{
+			Set:   pos(0),
+			Key:   "odps.sql.type.system.odps2",
+			Equal: pos(30),
+			Value: "true",
+		})
+		AssertParseStatement(t, `set odps.sql.split.size={"proj.schm.my_table": 16};`, &query.SetStatement{
+			Set:   pos(0),
+			Key:   "odps.sql.split.size",
+			Equal: pos(23),
+			Value: `{"proj.schm.my_table": 16}`,
+		})
 	})
 	t.Run("Variable", func(t *testing.T) {
 		AssertParseStatement(t, `@start_date Date;`, &query.DeclarationStatement{

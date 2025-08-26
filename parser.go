@@ -54,6 +54,18 @@ func (p *Parser) scan() (Pos, Token, string) {
 	}
 }
 
+func (p *Parser) scanUntil(cond Condition, escape rune) (Pos, string, error) {
+	pos, str, err := p.s.ScanUntil(cond, escape)
+	if err != nil {
+		return pos, str, err
+	}
+
+	p.full = false
+	p.scan()
+	p.full = true
+	return pos, str, nil
+}
+
 // scanBinaryOp performs a scan but combines multi-word operations into a single token.
 func (p *Parser) scanBinaryOp() (Pos, Token, error) {
 	pos, tok, _ := p.scan()

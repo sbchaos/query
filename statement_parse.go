@@ -3,6 +3,7 @@ package query
 import (
 	"errors"
 	"io"
+	"strings"
 )
 
 var EmptyStmt = Error{Pos: Pos{}, Msg: "empty statement"}
@@ -115,23 +116,27 @@ func (p *Parser) parseSetStatement() (Statement, error) {
 	var set SetStatement
 
 	set.Set, _, _ = p.scan()
-	key := ""
-	for {
-		_, tok, val := p.scan()
-		if tok == IDENT {
-			key += val
-		} else if tok == DOT {
-			key += "."
-		}
 
-		if p.peek() == EQ {
-			break
-		}
+	_, key, err := p.scanUntil(func(r rune) bool {
+		return r == '='
+	}, 0)
+	if err != nil {
+		return nil, err
 	}
-	set.Key = key
+	set.Key = strings.TrimSpace(key)
+
+	if p.peek() != EQ {
+		return nil, p.errorExpected(p.pos, p.tok, "=")
+	}
 	set.Equal, _, _ = p.scan()
-	_, _, val := p.scan()
-	set.Value = val
+
+	_, val, err := p.scanUntil(func(r rune) bool {
+		return r == ';'
+	}, 0)
+	if err != nil {
+		return nil, err
+	}
+	set.Value = strings.TrimSpace(val)
 
 	return &set, nil
 }

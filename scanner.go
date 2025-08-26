@@ -406,6 +406,7 @@ func (s *Scanner) ScanUntil(condition Condition, escape rune) (Pos, string, erro
 			s.buf.WriteRune(ch2)
 			continue
 		} else if condition(ch) {
+			s.full = true
 			return pos, s.buf.String(), nil
 		}
 		s.buf.WriteRune(ch)
