@@ -162,8 +162,8 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 		return &StringLit{ValuePos: pos, Value: lit}, nil
 	case tok == TMPL:
 		return &TemplateStr{TmplPos: pos, Template: lit}, nil
-	case tok == BLOB:
-		return &BlobLit{ValuePos: pos, Value: lit}, nil
+	case tok == RAWSTR:
+		return &RawLit{ValuePos: pos, Value: lit}, nil
 	case tok == FLOAT, tok == INTEGER:
 		return &NumberLit{ValuePos: pos, Value: lit}, nil
 	case tok == NULL:
@@ -172,6 +172,8 @@ func (p *Parser) parseOperand() (expr Expr, err error) {
 		return &BoolLit{ValuePos: pos, Value: tok == TRUE}, nil
 	case tok == BIND:
 		return &Ident{NamePos: pos, Name: lit, Tok: tok}, nil
+	case tok == INTERVAL:
+		return p.parseInterval()
 	case tok == PLUS, tok == MINUS, tok == BITNOT:
 		expr, err = p.parseOperand()
 		if err != nil {
@@ -220,21 +222,14 @@ func (p *Parser) handleSpecialCases(pos Pos, tok Token, lit string) (*Ident, err
 		}
 	}
 
-	if tok == IDENT && lit == "INTERVAL" {
-		strName := lit
-		if p.peek() != INTEGER {
-			return nil, p.errorExpected(p.pos, p.tok, "integer")
-		}
-		_, _, lit2 := p.scan()
-		strName = strName + " " + lit2
-
-		_, _, lit3 := p.scan()
-		strName = strName + " " + lit3
-		return &Ident{Name: strName, NamePos: pos, Tok: tok}, nil
-	}
-
 	if tok == GROUPING {
 		return &Ident{NamePos: pos, Name: "GROUPING", Tok: IDENT}, nil
+	}
+
+	if tok == LEFT || tok == RIGHT {
+		if p.peek() == LP {
+			return &Ident{NamePos: pos, Name: lit, Tok: tok}, nil
+		}
 	}
 
 	if tok == DATE || tok == TIMESTAMP {
@@ -331,6 +326,23 @@ func (p *Parser) parseBinaryExpr(prec1 int) (expr Expr, err error) {
 	if err != nil {
 		return nil, err
 	}
+	if p.peek() == LSB {
+		p0, _, _ := p.scan()
+		var idx NumberLit
+		if p.peek() == INTEGER || p.peek() == FLOAT {
+			p1, _, l1 := p.scan()
+			idx = NumberLit{ValuePos: p1, Value: l1}
+		} else {
+			return nil, p.errorExpected(p.pos, p.tok, "number")
+		}
+		if p.peek() != RSB {
+			return nil, p.errorExpected(p.pos, p.tok, "]")
+		}
+		p2, _, _ := p.scan()
+
+		x = &IndexExpr{X: x, LBrack: p0, Index: &idx, RBrack: p2}
+	}
+
 	for {
 		if p.peek().Precedence() < prec1 {
 			return x, nil
@@ -363,20 +375,6 @@ func (p *Parser) parseBinaryExpr(prec1 int) (expr Expr, err error) {
 				Op:    op,
 				Y:     rng,
 			}
-		case LSB:
-			p1, t1, l1 := p.scan()
-			var idx NumberLit
-			if t1 == INTEGER || t1 == FLOAT {
-				idx = NumberLit{ValuePos: p1, Value: l1}
-			} else {
-				return nil, p.errorExpected(p.pos, p.tok, "number")
-			}
-			if p.peek() != RSB {
-				return nil, p.errorExpected(p.pos, p.tok, "]")
-			}
-			p2, _, _ := p.scan()
-
-			return &IndexExpr{X: x, LBrack: pos, Index: &idx, RBrack: p2}, nil
 
 		default:
 			y, err := p.parseBinaryExpr(op.Precedence() + 1)

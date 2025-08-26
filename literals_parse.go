@@ -17,3 +17,18 @@ func (p *Parser) parseSignedNumber(desc string) (*NumberLit, error) {
 		return nil, p.errorExpected(p.pos, p.tok, desc)
 	}
 }
+
+func (p *Parser) parseInterval() (*IntervalLit, error) {
+	var inv IntervalLit
+	inv.Interval = p.pos
+
+	if p.peek() != INTEGER {
+		return nil, p.errorExpected(p.pos, p.tok, "integer")
+	}
+	_, _, lit2 := p.scan()
+	inv.Value = lit2
+
+	_, _, lit3 := p.scan()
+	inv.Unit = lit3
+	return &inv, nil
+}

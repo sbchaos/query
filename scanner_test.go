@@ -67,18 +67,12 @@ func TestScanner_Scan(t *testing.T) {
 			AssertScan(t, `'unfinished`, query.ILLEGAL, `'unfinished`)
 		})
 	})
-	t.Run("BLOB", func(t *testing.T) {
+	t.Run("RAWSTR", func(t *testing.T) {
 		t.Run("LowerX", func(t *testing.T) {
-			AssertScan(t, `x'0123456789abcdef'`, query.BLOB, `0123456789abcdef`)
-		})
-		t.Run("UpperX", func(t *testing.T) {
-			AssertScan(t, `X'0123456789ABCDEF'`, query.BLOB, `0123456789ABCDEF`)
+			AssertScan(t, `r'_|-'`, query.RAWSTR, `_|-`)
 		})
 		t.Run("NoEndQuote", func(t *testing.T) {
-			AssertScan(t, `x'0123`, query.ILLEGAL, `x'0123`)
-		})
-		t.Run("BadHex", func(t *testing.T) {
-			AssertScan(t, `x'hello`, query.ILLEGAL, `x'h`)
+			AssertScan(t, `r'0123`, query.ILLEGAL, `r'0123`)
 		})
 	})
 
@@ -199,6 +193,16 @@ func TestScanner_Scan(t *testing.T) {
 	})
 	t.Run("ILLEGAL", func(t *testing.T) {
 		AssertScan(t, "^", query.ILLEGAL, "^")
+	})
+	t.Run("ScanUntil", func(t *testing.T) {
+		t.Run("get until", func(t *testing.T) {
+			str := `aaaaaaabbb`
+			scn := query.NewScanner(strings.NewReader(str))
+			until, s, err := scn.ScanUntil(func(r rune) bool { return r == 'b' }, 0)
+			assert.NoError(t, err)
+			assert.Equal(t, until, pos(0))
+			assert.Equal(t, "aaaaaaa", s)
+		})
 	})
 }
 

@@ -625,6 +625,21 @@ func TestParser_ParseStatement(t *testing.T) {
 				},
 			},
 		})
+		AssertParseStatement(t, `SELECT * FROM tbl1 WHERE name rlike 'done'`, &query.SelectStatement{
+			Select:  pos(0),
+			Columns: []*query.ResultColumn{{Star: pos(7)}},
+			From:    pos(9),
+			Source: &query.QualifiedTableName{
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "tbl1", Tok: query.IDENT}},
+			},
+			Where: pos(19),
+			WhereExpr: &query.BinaryExpr{
+				X:     &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(25), Name: "name", Tok: query.IDENT}},
+				Op:    query.RLIKE,
+				OpPos: pos(30),
+				Y:     &query.StringLit{Value: "done", ValuePos: pos(36)},
+			},
+		})
 		AssertParseStatement(t, `SELECT * FROM dt WHERE true AND effective_timestamp <= CAST(dstart AS TIMESTAMP)`, &query.SelectStatement{
 			Select:  pos(0),
 			Columns: []*query.ResultColumn{{Star: pos(7)}},
@@ -969,7 +984,141 @@ func TestParser_ParseStatement(t *testing.T) {
 				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(17), Name: "@price", Tok: query.BIND}},
 			},
 		})
-
+		AssertParseStatement(t, `with date_ref as( select date('2023-03-01') ds, date_sub(current_date, interval 1 day) de, ) select * from date_ref`, &query.SelectStatement{
+			WithClause: &query.WithClause{
+				With: pos(0),
+				CTEs: []*query.CTE{
+					{
+						TableName:    &query.Ident{Name: "date_ref", NamePos: pos(5), Tok: query.IDENT},
+						As:           pos(14),
+						SelectLparen: pos(16),
+						SelectRparen: pos(91),
+						Select: &query.SelectStatement{
+							Select: pos(18),
+							Columns: []*query.ResultColumn{
+								{Expr: &query.Call{
+									Name:   &query.MultiPartIdent{Name: &query.Ident{Name: "date", NamePos: pos(25), Tok: query.DATE}},
+									Lparen: pos(29),
+									Rparen: pos(42),
+									Args:   []*query.Params{{X: &query.StringLit{ValuePos: pos(30), Value: "2023-03-01"}}},
+								},
+									Alias: &query.Ident{NamePos: pos(44), Name: "ds", Tok: query.IDENT},
+								},
+								{
+									Expr: &query.Call{
+										Name:   &query.MultiPartIdent{Name: &query.Ident{Name: "date_sub", NamePos: pos(48), Tok: query.IDENT}},
+										Lparen: pos(56),
+										Args: []*query.Params{
+											{X: &query.MultiPartIdent{Name: &query.Ident{Name: "current_date", NamePos: pos(57), Tok: query.CURRENT_DATE}}},
+											{X: &query.IntervalLit{Interval: pos(71), Value: "1", Unit: "day"}},
+										},
+										Rparen: pos(85),
+									},
+									Alias: &query.Ident{NamePos: pos(87), Name: "de", Tok: query.IDENT},
+								},
+							},
+						},
+					},
+				},
+			},
+			Select: pos(93),
+			Columns: []*query.ResultColumn{
+				{Star: pos(100)},
+			},
+			From: pos(102),
+			Source: &query.QualifiedTableName{
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(107), Name: "date_ref", Tok: query.IDENT}},
+			},
+		})
+		AssertParseStatement(t, `SELECT * FROM users u WHERE NOT EXISTS (SELECT * FROM orders o WHERE o.user_id = u.user_id);`, &query.SelectStatement{
+			Select:  pos(0),
+			From:    pos(9),
+			Columns: []*query.ResultColumn{{Star: pos(7)}},
+			Source: &query.QualifiedTableName{
+				Name:  &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(14), Name: "users", Tok: query.IDENT}},
+				Alias: &query.Ident{NamePos: pos(20), Name: "u", Tok: query.IDENT},
+			},
+			Where:          pos(22),
+			WhereNot:       pos(28),
+			WhereNotExists: pos(32),
+			Compound: &query.SelectStatement{
+				Select:  pos(40),
+				Columns: []*query.ResultColumn{{Star: pos(47)}},
+				From:    pos(49),
+				Source: &query.QualifiedTableName{
+					Name:  &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(54), Name: "orders", Tok: query.IDENT}},
+					Alias: &query.Ident{NamePos: pos(61), Name: "o", Tok: query.IDENT},
+				},
+				Where: pos(63),
+				WhereExpr: &query.BinaryExpr{
+					X: &query.MultiPartIdent{
+						First: &query.Ident{NamePos: pos(69), Name: "o", Tok: query.IDENT},
+						Dot1:  pos(70),
+						Name:  &query.Ident{NamePos: pos(71), Name: "user_id", Tok: query.IDENT}},
+					Op:    query.EQ,
+					OpPos: pos(79),
+					Y: &query.MultiPartIdent{
+						First: &query.Ident{NamePos: pos(81), Name: "u", Tok: query.IDENT},
+						Dot1:  pos(82),
+						Name:  &query.Ident{NamePos: pos(83), Name: "user_id", Tok: query.IDENT},
+					},
+				},
+			},
+		})
+		AssertParseStatement(t, `SELECT CONCAT(LEFT(a.b, 5), CAST(RIGHT(a.b, 2) AS INT)) FROM a`, &query.SelectStatement{
+			Select: pos(0),
+			Columns: []*query.ResultColumn{
+				{
+					Expr: &query.Call{
+						Name:   &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(7), Name: "CONCAT", Tok: query.IDENT}},
+						Lparen: pos(13),
+						Rparen: pos(54),
+						Args: []*query.Params{
+							{
+								X: &query.Call{
+									Name: &query.MultiPartIdent{
+										Name: &query.Ident{NamePos: pos(14), Name: "LEFT", Tok: query.LEFT}},
+									Args: []*query.Params{
+										{X: &query.MultiPartIdent{
+											First: &query.Ident{NamePos: pos(19), Name: "a", Tok: query.IDENT},
+											Dot1:  pos(20),
+											Name:  &query.Ident{NamePos: pos(21), Name: "b", Tok: query.IDENT}}},
+										{X: &query.NumberLit{ValuePos: pos(24), Value: "5"}},
+									},
+									Lparen: pos(18),
+									Rparen: pos(25),
+								},
+							},
+							{
+								X: &query.CastExpr{
+									Cast: pos(28),
+									X: &query.Call{
+										Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(33), Name: "RIGHT", Tok: query.RIGHT}},
+										Args: []*query.Params{
+											{X: &query.MultiPartIdent{
+												First: &query.Ident{NamePos: pos(39), Name: "a", Tok: query.IDENT},
+												Dot1:  pos(40),
+												Name:  &query.Ident{NamePos: pos(41), Name: "b", Tok: query.IDENT}}},
+											{X: &query.NumberLit{ValuePos: pos(44), Value: "2"}},
+										},
+										Lparen: pos(38),
+										Rparen: pos(45),
+									},
+									As:     pos(47),
+									Type:   &query.Type{Name: &query.Ident{NamePos: pos(50), Name: "INT", Tok: query.IDENT}},
+									Lparen: pos(32),
+									Rparen: pos(53),
+								},
+							},
+						},
+					},
+				},
+			},
+			From: pos(56),
+			Source: &query.QualifiedTableName{
+				Name: &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(61), Name: "a", Tok: query.IDENT}},
+			},
+		})
 		AssertParseStatement(t, `SELECT * UNION SELECT * ORDER BY foo`, &query.SelectStatement{
 			Select: pos(0),
 			Columns: []*query.ResultColumn{

@@ -1,53 +1,36 @@
 package query
 
-func (*BlobLit) node()      {}
 func (*BoolLit) node()      {}
+func (*IntervalLit) node()  {}
 func (*NullLit) node()      {}
 func (*NumberLit) node()    {}
+func (*RawLit) node()       {}
 func (*StringLit) node()    {}
 func (*TimestampLit) node() {}
 func (*TemplateStr) node()  {}
 
 // Literal expression
-func (*BlobLit) expr()      {}
 func (*BoolLit) expr()      {}
+func (*IntervalLit) expr()  {}
 func (*NullLit) expr()      {}
 func (*NumberLit) expr()    {}
+func (*RawLit) expr()       {}
 func (*StringLit) expr()    {}
 func (*TimestampLit) expr() {}
 func (*TemplateStr) expr()  {}
 
-type BlobLit struct {
+type RawLit struct {
 	ValuePos Pos    `json:"value_pos"`
 	Value    string `json:"value"`
 }
 
-// Clone returns a deep copy of lit.
-func (lit *BlobLit) Clone() *BlobLit {
-	if lit == nil {
-		return nil
-	}
-	other := *lit
-	return &other
-}
-
-// String returns the string representation of the expression.
-func (lit *BlobLit) String() string {
-	return `x'` + lit.Value + `'`
+func (lit *RawLit) String() string {
+	return `r'` + lit.Value + `'`
 }
 
 type BoolLit struct {
 	ValuePos Pos  `json:"value_pos"`
 	Value    bool `json:"value"`
-}
-
-// Clone returns a deep copy of lit.
-func (lit *BoolLit) Clone() *BoolLit {
-	if lit == nil {
-		return nil
-	}
-	other := *lit
-	return &other
 }
 
 // String returns the string representation of the expression.
@@ -62,15 +45,6 @@ type NullLit struct {
 	Pos Pos `json:"pos"`
 }
 
-// Clone returns a deep copy of lit.
-func (lit *NullLit) Clone() *NullLit {
-	if lit == nil {
-		return nil
-	}
-	other := *lit
-	return &other
-}
-
 // String returns the string representation of the expression.
 func (lit *NullLit) String() string {
 	return "NULL"
@@ -79,15 +53,6 @@ func (lit *NullLit) String() string {
 type NumberLit struct {
 	ValuePos Pos    `json:"value_pos"`
 	Value    string `json:"value"`
-}
-
-// Clone returns a deep copy of lit.
-func (lit *NumberLit) Clone() *NumberLit {
-	if lit == nil {
-		return nil
-	}
-	other := *lit
-	return &other
 }
 
 // String returns the string representation of the expression.
@@ -99,15 +64,6 @@ type StringLit struct {
 	ValuePos Pos    `json:"value_pos"`
 	Value    string `json:"value"`
 	Quote    rune   `json:"quote"`
-}
-
-// Clone returns a deep copy of lit.
-func (lit *StringLit) Clone() *StringLit {
-	if lit == nil {
-		return nil
-	}
-	other := *lit
-	return &other
 }
 
 // String returns the string representation of the expression.
@@ -123,15 +79,6 @@ type TimestampLit struct {
 	Value    string `json:"value"`
 }
 
-// Clone returns a deep copy of lit.
-func (lit *TimestampLit) Clone() *TimestampLit {
-	if lit == nil {
-		return nil
-	}
-	other := *lit
-	return &other
-}
-
 // String returns the string representation of the expression.
 func (lit *TimestampLit) String() string {
 	return lit.Value
@@ -142,14 +89,16 @@ type TemplateStr struct {
 	Template string `json:"template"`
 }
 
-func (lit *TemplateStr) Clone() *TemplateStr {
-	if lit == nil {
-		return nil
-	}
-	other := *lit
-	return &other
-}
-
 func (lit *TemplateStr) String() string {
 	return "{{" + lit.Template + "}}"
+}
+
+type IntervalLit struct {
+	Interval Pos    `json:"interval_pos"`
+	Value    string `json:"value"`
+	Unit     string `json:"unit"`
+}
+
+func (lit *IntervalLit) String() string {
+	return "INTERVAL " + lit.Value + " " + lit.Unit
 }

@@ -39,7 +39,7 @@ const (
 	QIDENT  // "IDENT"
 	STRING  // 'string'
 	TSTRING // `string`
-	BLOB    // ???
+	RAWSTR  // r'string'
 	FLOAT   // 123.45
 	INTEGER // 123
 	NULL    // NULL
@@ -121,6 +121,7 @@ const (
 	INNER
 	INSERT
 	INTERSECT
+	INTERVAL
 	INTO
 	IS
 	ISNOT
@@ -159,6 +160,8 @@ const (
 	REPLACE
 	RETURNS
 	RETURNING
+	RIGHT
+	RLIKE
 	ROWID
 	SELECT
 	SET
@@ -191,7 +194,7 @@ var tokens = [...]string{
 	IDENT:   "IDENT",
 	QIDENT:  "QIDENT",
 	STRING:  "STRING",
-	BLOB:    "BLOB",
+	RAWSTR:  "RAWSTR",
 	FLOAT:   "FLOAT",
 	INTEGER: "INTEGER",
 	NULL:    "NULL",
@@ -265,6 +268,7 @@ var tokens = [...]string{
 	INNER:             "INNER",
 	INSERT:            "INSERT",
 	INTERSECT:         "INTERSECT",
+	INTERVAL:          "INTERVAL",
 	INTO:              "INTO",
 	IS:                "IS",
 	ISNOT:             "ISNOT",
@@ -303,6 +307,8 @@ var tokens = [...]string{
 	REPLACE:           "REPLACE",
 	RETURNS:           "RETURNS",
 	RETURNING:         "RETURNING",
+	RIGHT:             "RIGHT",
+	RLIKE:             "RLIKE",
 	ROWID:             "ROWID",
 	SELECT:            "SELECT",
 	SET:               "SET",
@@ -385,7 +391,7 @@ func isExprIdentToken(tok Token) bool {
 	case ROWID, CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP:
 		return true
 	// Special Cases
-	case GROUPING, DATE, TIMESTAMP:
+	case GROUPING, DATE, TIMESTAMP, LEFT, RIGHT:
 		return true
 	// Core functions
 	case REPLACE, LIKE, GLOB, IF:
@@ -419,7 +425,7 @@ func (t Token) Precedence() int {
 		return 2
 	case NOT:
 		return 3
-	case IS, MATCH, LIKE, GLOB, REGEXP, BETWEEN, IN, ISNULL, NOTNULL, NE, EQ:
+	case IS, MATCH, LIKE, GLOB, REGEXP, BETWEEN, IN, ISNULL, NOTNULL, NE, EQ, RLIKE:
 		return 4
 	case GT, LE, LT, GE, EQN:
 		return 5

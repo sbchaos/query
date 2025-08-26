@@ -110,11 +110,11 @@ func TestParser_ParseStatement2(t *testing.T) {
 					},
 					OpPos: pos(32),
 					Op:    query.PLUS,
-					Y:     &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(34), Name: "INTERVAL 17 HOUR", Tok: query.IDENT}},
+					Y:     &query.IntervalLit{Interval: pos(34), Value: "17", Unit: "HOUR"},
 				},
 				OpPos: pos(51),
 				Op:    query.MINUS,
-				Y:     &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(53), Name: "INTERVAL 1 SECOND", Tok: query.IDENT}},
+				Y:     &query.IntervalLit{Interval: pos(53), Value: "1", Unit: "SECOND"},
 			},
 		})
 	})

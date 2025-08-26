@@ -6,6 +6,8 @@ import (
 	"unicode"
 )
 
+type Condition func(r rune) bool
+
 type Scanner struct {
 	r   io.RuneReader
 	buf bytes.Buffer
@@ -31,8 +33,8 @@ func (s *Scanner) Scan() (pos Pos, token Token, lit string) {
 			continue
 		} else if isDigit(ch) || ch == '.' {
 			return s.scanNumber()
-		} else if ch == 'x' || ch == 'X' {
-			return s.scanBlob()
+		} else if ch == 'r' {
+			return s.scanRaw()
 		} else if isAlpha(ch) || ch == '_' {
 			return s.scanUnquotedIdent(s.pos, "")
 		} else if ch == '"' {
@@ -257,9 +259,9 @@ func (s *Scanner) scanBind() (Pos, Token, string) {
 	return pos, BIND, s.buf.String()
 }
 
-func (s *Scanner) scanBlob() (Pos, Token, string) {
+func (s *Scanner) scanRaw() (Pos, Token, string) {
 	start, pos := s.read()
-	assert(start == 'x' || start == 'X')
+	assert(start == 'r')
 
 	// If the next character is not a quote, it's an IDENT.
 	if isUnquotedIdent(s.peek()) {
@@ -274,11 +276,9 @@ func (s *Scanner) scanBlob() (Pos, Token, string) {
 	for i := 0; ; i++ {
 		ch, _ := s.read()
 		if ch == '\'' {
-			return pos, BLOB, s.buf.String()
+			return pos, RAWSTR, s.buf.String()
 		} else if ch == -1 {
 			return pos, ILLEGAL, string(start) + `'` + s.buf.String()
-		} else if !isHex(ch) {
-			return pos, ILLEGAL, string(start) + `'` + s.buf.String() + string(ch)
 		}
 		s.buf.WriteRune(ch)
 	}
@@ -388,6 +388,28 @@ func (s *Scanner) read() (rune, Pos) {
 		s.pos.Column++
 	}
 	return s.ch, s.pos
+}
+
+func (s *Scanner) ScanUntil(condition Condition, escape rune) (Pos, string, error) {
+	pos := s.pos
+	if pos.Offset == -1 { // Not read anything
+		pos = Pos{Offset: 0, Line: 1, Column: 1}
+	}
+
+	s.buf.Reset()
+	for {
+		ch, _ := s.read()
+		if ch == -1 {
+			return pos, s.buf.String(), io.EOF
+		} else if ch == escape {
+			ch2, _ := s.read()
+			s.buf.WriteRune(ch2)
+			continue
+		} else if condition(ch) {
+			return pos, s.buf.String(), nil
+		}
+		s.buf.WriteRune(ch)
+	}
 }
 
 func (s *Scanner) peek() rune {

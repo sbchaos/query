@@ -16,10 +16,6 @@ func TestNumberLit_String(t *testing.T) {
 	AssertExprStringer(t, &query.NumberLit{Value: "123.45"}, `123.45`)
 }
 
-func TestBlobLit_String(t *testing.T) {
-	AssertExprStringer(t, &query.BlobLit{Value: "0123abcd"}, `x'0123abcd'`)
-}
-
 func TestBoolLit_String(t *testing.T) {
 	AssertExprStringer(t, &query.BoolLit{Value: true}, `TRUE`)
 	AssertExprStringer(t, &query.BoolLit{Value: false}, `FALSE`)

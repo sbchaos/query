@@ -110,9 +110,6 @@ func TestParser_ParseExpr(t *testing.T) {
 	t.Run("StringLit", func(t *testing.T) {
 		AssertParseExpr(t, `'foo bar'`, &query.StringLit{ValuePos: pos(0), Value: `foo bar`})
 	})
-	t.Run("BlobLit", func(t *testing.T) {
-		AssertParseExpr(t, `x'0123'`, &query.BlobLit{ValuePos: pos(0), Value: `0123`})
-	})
 	t.Run("Integer", func(t *testing.T) {
 		AssertParseExpr(t, `123`, &query.NumberLit{ValuePos: pos(0), Value: `123`})
 	})
@@ -123,11 +120,16 @@ func TestParser_ParseExpr(t *testing.T) {
 		AssertParseExpr(t, `NULL`, &query.NullLit{Pos: pos(0)})
 	})
 	t.Run("IndexExpr", func(t *testing.T) {
-		AssertParseExpr(t, `arr[1]`, &query.IndexExpr{
-			X:      &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(0), Name: `arr`, Tok: query.IDENT}},
-			Index:  &query.NumberLit{ValuePos: pos(4), Value: `1`},
-			LBrack: pos(3),
-			RBrack: pos(5),
+		AssertParseExpr(t, `arr[1] = 5`, &query.BinaryExpr{
+			X: &query.IndexExpr{
+				X:      &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(0), Name: `arr`, Tok: query.IDENT}},
+				Index:  &query.NumberLit{ValuePos: pos(4), Value: `1`},
+				LBrack: pos(3),
+				RBrack: pos(5),
+			},
+			Op:    query.EQ,
+			OpPos: pos(7),
+			Y:     &query.NumberLit{ValuePos: pos(9), Value: `5`},
 		})
 	})
 	t.Run("Bool", func(t *testing.T) {

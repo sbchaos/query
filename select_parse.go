@@ -72,7 +72,7 @@ func (p *Parser) parseSelectStatement(compounded bool, withClause *WithClause) (
 				break
 			}
 			p.scan()
-			if p.peek() == FROM {
+			if p.peek() == FROM || p.peek() == RP {
 				break
 			}
 		}
@@ -88,8 +88,30 @@ func (p *Parser) parseSelectStatement(compounded bool, withClause *WithClause) (
 		// Parse WHERE clause.
 		if p.peek() == WHERE {
 			stmt.Where, _, _ = p.scan()
-			if stmt.WhereExpr, err = p.ParseExpr(); err != nil {
-				return &stmt, err
+
+			if p.peek() == NOT {
+				stmt.WhereNot, _, _ = p.scan()
+
+				if p.peek() != EXISTS {
+					return &stmt, p.errorExpected(p.pos, p.tok, "exists in WHERE NOT EXISTS")
+				}
+				stmt.WhereNotExists, _, _ = p.scan()
+
+				if p.peek() == LP {
+					p.scan()
+				}
+
+				stmt.Compound, err = p.parseSelectStatement(true, nil)
+				if err != nil {
+					return &stmt, err
+				}
+				if p.peek() == RP {
+					p.scan()
+				}
+			} else {
+				if stmt.WhereExpr, err = p.ParseExpr(); err != nil {
+					return &stmt, err
+				}
 			}
 		}
 
