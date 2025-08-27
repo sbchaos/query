@@ -625,6 +625,43 @@ func TestParser_ParseStatement(t *testing.T) {
 				},
 			},
 		})
+		AssertParseStatement(t, `SELECT * FROM tbl1 WHERE event_date BETWEEN to_date('2025-06-01')-1 AND CURRENT_DATE()`, &query.SelectStatement{
+			Select:  pos(0),
+			Columns: []*query.ResultColumn{{Star: pos(7)}},
+			From:    pos(9),
+			Source: &query.QualifiedTableName{
+				Name: &query.MultiPartIdent{Name: &query.Ident{Name: "tbl1", NamePos: pos(14), Tok: query.IDENT}},
+			},
+			Where: pos(19),
+			WhereExpr: &query.BinaryExpr{
+				X:     &query.MultiPartIdent{Name: &query.Ident{NamePos: pos(25), Name: "event_date", Tok: query.IDENT}},
+				Op:    query.BETWEEN,
+				OpPos: pos(36),
+				Y: &query.Range{
+					X: &query.BinaryExpr{
+						X: &query.Call{
+							Name:   &query.MultiPartIdent{Name: &query.Ident{Name: "to_date", NamePos: pos(44), Tok: query.IDENT}},
+							Lparen: pos(51),
+							Rparen: pos(64),
+							Args: []*query.Params{
+								{
+									X: &query.StringLit{Value: "2025-06-01", ValuePos: pos(52)},
+								},
+							},
+						},
+						Op:    query.MINUS,
+						OpPos: pos(65),
+						Y:     &query.NumberLit{Value: "1", ValuePos: pos(66)},
+					},
+					And: pos(68),
+					Y: &query.Call{
+						Name:   &query.MultiPartIdent{Name: &query.Ident{Name: "CURRENT_DATE", NamePos: pos(72), Tok: query.CURRENT_DATE}},
+						Lparen: pos(84),
+						Rparen: pos(85),
+					},
+				},
+			},
+		})
 		AssertParseStatement(t, `SELECT * FROM tbl1 WHERE name rlike 'done'`, &query.SelectStatement{
 			Select:  pos(0),
 			Columns: []*query.ResultColumn{{Star: pos(7)}},

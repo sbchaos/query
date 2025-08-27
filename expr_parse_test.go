@@ -393,7 +393,7 @@ func TestParser_ParseExpr(t *testing.T) {
 		})
 		AssertParseExprError(t, `1 BETWEEN`, `1:9: expected expression, found 'EOF'`)
 		AssertParseExprError(t, `1 BETWEEN 2`, `1:11: expected AND for BETWEEN, found 'EOF'`)
-		AssertParseExprError(t, `1 BETWEEN 2 + 3`, `1:13: expected AND for BETWEEN, found '+'`)
+		AssertParseExprError(t, `1 BETWEEN 2 + 3`, `1:15: expected AND for BETWEEN, found 'EOF'`)
 		AssertParseExprError(t, `1 + `, `1:4: expected expression, found 'EOF'`)
 	})
 	t.Run("Call", func(t *testing.T) {

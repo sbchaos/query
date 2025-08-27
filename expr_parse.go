@@ -250,7 +250,7 @@ func (p *Parser) parseMultiIdent(ident *Ident) (*MultiPartIdent, Pos) {
 		}, emptyPos
 	}
 	dot1, _, _ := p.scan()
-	if !isAllowedIdent(p.peek()) {
+	if !isIdentToken(p.peek()) {
 		return &MultiPartIdent{Name: ident}, dot1
 	}
 	// Next ident
@@ -262,7 +262,7 @@ func (p *Parser) parseMultiIdent(ident *Ident) (*MultiPartIdent, Pos) {
 	}
 
 	dot2, _, _ := p.scan()
-	if !isAllowedIdent(p.peek()) {
+	if !isIdentToken(p.peek()) {
 		return &MultiPartIdent{First: ident, Dot1: dot1, Name: ident2}, dot2
 	}
 
@@ -275,7 +275,7 @@ func (p *Parser) parseMultiIdent(ident *Ident) (*MultiPartIdent, Pos) {
 	}
 
 	dot3, _, _ := p.scan()
-	if !isAllowedIdent(p.peek()) {
+	if !isIdentToken(p.peek()) {
 		return &MultiPartIdent{First: ident, Dot1: dot1, Second: ident2, Dot2: dot2, Name: ident3}, dot3
 	}
 
@@ -410,6 +410,21 @@ func (p *Parser) parseBetweenExpr() (expr *Range, err error) {
 		return nil, err
 	}
 
+	tok := p.peek()
+	if tok != AND && tok.IsBinaryOp() {
+		p2, t2, _ := p.scan()
+
+		y1, err := p.parseOperand()
+		if err != nil {
+			return nil, err
+		}
+		x1 = &BinaryExpr{
+			X:     x1,
+			OpPos: p2,
+			Op:    t2,
+			Y:     y1,
+		}
+	}
 	if p.peek() != AND {
 		return nil, p.errorExpected(p.pos, p.tok, "AND for BETWEEN")
 	}
