@@ -1,19 +1,55 @@
 package lineage
 
-import "github.com/sbchaos/query"
+import (
+	"bytes"
+	"fmt"
+	"strings"
+
+	"github.com/sbchaos/query"
+)
 
 type Table struct {
-	Project string
-	Schema  string
-	Name    string
+	Project string `yaml:"project"`
+	Schema  string `yaml:"schema"`
+	Name    string `yaml:"name"`
 
-	SubTable []*Table
-	CTE      []*Table
-	Join     []*Table
-	IsCte    bool
-	Alias    string
+	SubTable []*Table `yaml:"subTable"`
+	CTE      []*Table `yaml:"cte"`
+	Join     []*Table `yaml:"join"`
+	IsCte    bool     `yaml:"isCte"`
+	Alias    string   `yaml:"alias"`
 
-	Columns []Column
+	Columns []Column `yaml:"columns"`
+}
+
+func ParseQuery(name string, str string) (*Table, error) {
+	stmts, err := query.NewParser(strings.NewReader(str)).ParseStatements()
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse %s: %v", name, err)
+	}
+
+	t := &Table{}
+	for _, stmt := range stmts {
+		switch stmt := stmt.(type) {
+		case *query.SelectStatement:
+			t.fromSelect(stmt)
+		}
+	}
+	return t, nil
+}
+
+func (t *Table) DisplayName() string {
+	var buf bytes.Buffer
+	if t.Project != "" {
+		buf.WriteString(t.Project)
+		buf.WriteString(".")
+	}
+	if t.Schema != "" {
+		buf.WriteString(t.Schema)
+		buf.WriteString(".")
+	}
+	buf.WriteString(t.Name)
+	return buf.String()
 }
 
 func (t *Table) fromSelect(sel *query.SelectStatement) {
@@ -32,10 +68,21 @@ func (t *Table) fromSelect(sel *query.SelectStatement) {
 		t.SubTable = append(t.SubTable, t2)
 		t2.fromSelect(sel.Compound)
 	}
+
+	for _, col := range sel.Columns {
+		cs := processColumn(col)
+		for _, c1 := range cs {
+			if c1.Name != "" {
+				t.addColumn(c1)
+			}
+		}
+	}
 }
 
 func (t *Table) fromCTE(clause *query.CTE) {
-	t2 := &Table{}
+	t2 := &Table{
+		IsCte: true,
+	}
 
 	if clause.TableName != nil {
 		t2.Name = clause.TableName.String()
@@ -100,6 +147,25 @@ func (t *Table) processSource(src query.Source) {
 				}
 			}
 			t.Name = mIdent.Name.Name
+		}
+	}
+}
+
+func (t *Table) addColumn(c1 Column) {
+	if c1.Ref == "" {
+		t.Columns = append(t.Columns, c1)
+		return
+	}
+
+	for _, t1 := range t.SubTable {
+		if strings.EqualFold(t1.Alias, c1.Ref) {
+			t1.addColumn(c1)
+		}
+	}
+
+	for _, t2 := range t.Join {
+		if strings.EqualFold(t2.Alias, c1.Ref) {
+			t2.addColumn(c1)
 		}
 	}
 }
